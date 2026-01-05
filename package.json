@@ -1,0 +1,44 @@
+{
+  "name": "asyncmux",
+  "version": "0.0.0",
+  "description": "",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "package.json",
+    "LICENSE"
+  ],
+  "homepage": "https://github.com/tai-kun/asyncmux",
+  "repository": {
+    "url": "https://github.com/tai-kun/asyncmux"
+  },
+  "dependencies": {
+    "@tai-kun/is-promise-like": "^0.0.4",
+    "i18n-error-base": "^0.0.2",
+    "try-capture-stack-trace": "^0.0.2"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.5",
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/node": "^22.19.3",
+    "@vitest/browser": "^4.0.16",
+    "@vitest/browser-playwright": "^4.0.16",
+    "dprint": "^0.51.1",
+    "npm-check-updates": "^19.2.0",
+    "playwright": "^1.57.0",
+    "typescript": "^5.9.3",
+    "valibot": "^1.2.0",
+    "vitest": "^4.0.16"
+  },
+  "scripts": {
+    "build": "tsc --project ./.config/tsconfig.build.json"
+  }
+}
