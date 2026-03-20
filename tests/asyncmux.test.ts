@@ -676,6 +676,23 @@ describe("マニュアル", () => {
         .toThrow(LockEscalationError);
     });
   });
+
+  describe("AbortSignal による中断", () => {
+    test("ロック待機中に中断された場合、エラーを投げる", async ({ expect }) => {
+      const self = {};
+      const ac = new AbortController();
+      const abortError = new Error("Abort");
+
+      // 1. まず先行してロックを取得し、解放しない。
+      using _ = await asyncmux(self);
+      // 2. 2 番目のロック取得を試みる（待機状態になる）
+      const promise = asyncmux(self, { signal: ac.signal });
+      // 3. 待機中に中断を実行
+      ac.abort(abortError);
+
+      await expect(promise).rejects.toThrow(abortError);
+    });
+  });
 });
 
 describe("API", () => {
@@ -859,6 +876,23 @@ describe("API", () => {
         "W-1 start",
         "W-1 end",
       ]);
+    });
+  });
+
+  describe("AbortSignal による中断", () => {
+    test("ロック待機中に中断された場合、エラーを投げる", async ({ expect }) => {
+      const mux = asyncmux.create();
+      const ac = new AbortController();
+      const abortError = new Error("Abort");
+
+      // 1. まず先行してロックを取得し、解放しない。
+      using _ = await mux.lock();
+      // 2. 2 番目のロック取得を試みる（待機状態になる）
+      const promise = mux.lock({ signal: ac.signal });
+      // 3. 待機中に中断を実行
+      ac.abort(abortError);
+
+      await expect(promise).rejects.toThrow(abortError);
     });
   });
 });
