@@ -1,7 +1,8 @@
 {
   "name": "asyncmux",
   "version": "0.0.0",
-  "description": "",
+  "license": "MIT",
+  "description": "A utility for mutual exclusion using asynchronous processing",
   "sideEffects": false,
   "type": "module",
   "exports": {

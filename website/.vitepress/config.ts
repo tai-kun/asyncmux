@@ -4,6 +4,8 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "asyncmux",
 
+  outDir: "../docs",
+
   rewrites: {
     "ja/:rest*": ":rest*",
   },

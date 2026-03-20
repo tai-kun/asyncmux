@@ -222,4 +222,3 @@ $RECYCLE.BIN/
 dist/
 cache/
 __screenshots__/
-!/website/.vitepress/dist/
