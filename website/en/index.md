@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: What is asyncmux?
-      link: /guide/what-is-asyncmux
+      link: /en/guide/what-is-asyncmux
     - theme: alt
       text: Quickstart
-      link: /guide/getting-started
+      link: /en/guide/getting-started
     - theme: alt
       text: GitHub
       link: https://github.com/tai-kun/asyncmux
