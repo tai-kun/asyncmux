@@ -24,7 +24,7 @@ run = "npx vitepress dev website"
 run = "npx vitepress build website"
 
 [tasks."docs:preview"]
-run = "npx vitepress preview websit"
+run = "npx vitepress preview website"
 
 [tasks.update]
 run = [
