@@ -1,11 +1,11 @@
 import unreachable from "./_unreachable.js";
 import { DecoratorSupportError, LockEscalationError } from "./errors.js";
 
-/***************************************************************************************************
- *
- * 共通の型
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// 共通の型
+//
+// -------------------------------------------------------------------------------------------------
 
 /**
  * 書き込み操作のキューアイテムを表す型です。
@@ -130,11 +130,11 @@ class AsyncmuxLock implements Disposable {
   }
 }
 
-/***************************************************************************************************
- *
- * クラスメソッドで利用するユーティリティー
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// クラスメソッドで利用するユーティリティー
+//
+// -------------------------------------------------------------------------------------------------
 
 /**
  * asyncmux の状態を保持するプロパティーキーです。
@@ -225,13 +225,7 @@ function initializeInstance(this: any): void {
   });
 }
 
-/**
- * ロックのオプションです。
- */
-type ManualAsyncmuxOptions = Readonly<{
-  /**
-   * ロックの獲得を中止するシグナルです。
-   */
+export type ManualAsyncmuxOptions = Readonly<{
   signal?: AbortSignal | undefined;
 }>;
 
@@ -420,15 +414,12 @@ function manualAsyncmux(
 }
 
 /**
- * 1 つ以上のクラスメソッドを同時実行性 1 で非同期処理するデコレーターです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#decorator-asyncmux)
  */
 function asyncmux<TMethod extends AsyncClassMethod>(method: TMethod, context: unknown): TMethod;
 
 /**
- * 同時実行性 1 で非同期処理するためのロックを獲得します。
- *
- * @param this_ インスタンスの `this` です。
- * @param options ロックのオプションです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#functional-asyncmux)
  */
 function asyncmux(
   this_: object,
@@ -526,7 +517,7 @@ function manualAsyncmuxReadonly(
 }
 
 /**
- * 1 つ以上のクラスメソッドを並行して処理するデコレーターです。`asyncmux` と並行して実行されることはありません。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#decorator-asyncmux-readonly)
  */
 function asyncmuxReadonly<TMethod extends AsyncClassMethod>(
   method: TMethod,
@@ -534,10 +525,7 @@ function asyncmuxReadonly<TMethod extends AsyncClassMethod>(
 ): TMethod;
 
 /**
- * 共有ロック（読み取りロック）を獲得します。
- *
- * @param this_ インスタンスの `this` です。
- * @param options ロックのオプションです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#functional-asyncmux-readonly)
  */
 function asyncmuxReadonly(
   this_: object,
@@ -552,11 +540,11 @@ function asyncmuxReadonly(...args: [any, any?]): any {
   }
 }
 
-/***************************************************************************************************
- *
- * 汎用ユーティリティー
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// 汎用ユーティリティー
+//
+// -------------------------------------------------------------------------------------------------
 
 /**
  * ロックのオプションです。
@@ -574,7 +562,7 @@ type AsyncmuxLockOptions = Readonly<{
 }>;
 
 /**
- * 排他制御のためのキューを管理するクラスです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html)
  */
 class Asyncmux {
   /**
@@ -654,37 +642,22 @@ class Asyncmux {
   }
 
   /**
-   * 全リソースに対するロックを獲得します。
-   *
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-lock)
    */
   public lock(): Promise<AsyncmuxLock>;
 
   /**
-   * リソースを指定してロックを獲得します。
-   *
-   * @param key ロックするリソースの識別子です。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-lock-key)
    */
   public lock(key: string): Promise<AsyncmuxLock>;
 
   /**
-   * ロックを獲得します。
-   *
-   * @param options ロックのオプションです。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-lock-options)
    */
   public lock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
 
   /**
-   * ロックを獲得します。
-   *
-   * @param option ロックするリソースの識別子またはロックのオプションです。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-lock)
    */
   public lock(option?: string | AsyncmuxLockOptions | undefined): Promise<AsyncmuxLock>;
 
@@ -801,37 +774,22 @@ class Asyncmux {
   }
 
   /**
-   * 全リソースに対する読み取りロックを獲得します。
-   *
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-rlock)
    */
   public rLock(): Promise<AsyncmuxLock>;
 
   /**
-   * リソースを指定して読み取りロックを獲得します。
-   *
-   * @param key ロックするリソースの識別子です。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-rlock-key)
    */
   public rLock(key: string): Promise<AsyncmuxLock>;
 
   /**
-   * 読み取りロックを獲得します。
-   *
-   * @param options ロックのオプションです。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-rlock-options)
    */
   public rLock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
 
   /**
-   * 読み取りロックを獲得します。
-   *
-   * @param option ロックするリソースの識別子またはロックのオプションです。
-   * @returns 獲得したロックを解除するための `AsyncmuxLock` オブジェクトです。
-   * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#mux-rlock)
    */
   public rLock(option?: string | AsyncmuxLockOptions | undefined): Promise<AsyncmuxLock>;
 
@@ -933,30 +891,28 @@ class Asyncmux {
 }
 
 /**
- * 排他制御のためのキューを管理するオブジェクトを作成します。
- *
- * @returns 排他制御のためのキューを管理するオブジェクトです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#asyncmux-create)
  */
 function createAsyncmux(): Asyncmux {
   return new Asyncmux();
 }
 
-/***************************************************************************************************
- *
- * Export
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// Export
+//
+// -------------------------------------------------------------------------------------------------
 
 export type { Asyncmux, AsyncmuxLock, AsyncmuxLockOptions };
 
 export default /*#__PURE__*/ Object.assign(asyncmux, {
   /**
-   * 排他制御のためのキューを管理するオブジェクトを作成する関数です。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#asyncmux-create)
    */
   create: createAsyncmux,
 
   /**
-   * 1 つ以上のクラスメソッドを並行して処理するデコレーターです。`@asyncmux` と並行して実行されることはありません。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#decorator-asyncmux-readonly)
    */
   readonly: asyncmuxReadonly,
 });

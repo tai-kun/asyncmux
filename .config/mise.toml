@@ -17,6 +17,15 @@ run = "npx vitest --config ./.config/vitest.client.ts"
 [tasks."test:typecheck"]
 run = "npx tsc --noEmit --project ./.config/tsconfig.test.json"
 
+[tasks."docs:dev"]
+run = "npx vitepress dev website"
+
+[tasks."docs:build"]
+run = "npx vitepress build website"
+
+[tasks."docs:preview"]
+run = "npx vitepress preview websit"
+
 [tasks.update]
 run = [
     "npx npm-check-updates --target minor -u --cooldown 3",

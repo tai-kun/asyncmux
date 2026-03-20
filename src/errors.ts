@@ -1,10 +1,10 @@
 import { type ErrorMeta, I18nErrorBase, initErrorMessage, setErrorMessage } from "i18n-error-base";
 
-/***************************************************************************************************
- *
- * ユーティリティー
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// ユーティリティー
+//
+// -------------------------------------------------------------------------------------------------
 
 /**
  * あらゆる値を文字列に整形します。
@@ -12,7 +12,7 @@ import { type ErrorMeta, I18nErrorBase, initErrorMessage, setErrorMessage } from
  * @param value 文字列に整形する値です。
  * @returns 文字列に整形された値です。
  */
-export function formatErrorValue(value: unknown): string {
+function formatErrorValue(value: unknown): string {
   if (typeof value === "string") {
     return value;
   }
@@ -24,30 +24,25 @@ export function formatErrorValue(value: unknown): string {
   }
 }
 
-/***************************************************************************************************
- *
- * エラークラス
- *
- **************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
+//
+// エラークラス
+//
+// -------------------------------------------------------------------------------------------------
 
 /**
- * Asyncmux エラーの基底クラスです。
- *
- * @template TMeta エラーに紐づくメタデータです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#error-base)
  */
 export class ErrorBase<TMeta extends ErrorMeta | undefined = undefined>
   extends I18nErrorBase<TMeta>
 {}
 
-/**************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
 
 /**
- * 到達不能なコードに到達した場合に投げられるエラーです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#unreachable-error)
  */
 export class UnreachableError extends ErrorBase<{
-  /**
-   * 到達しないはずの値です。
-   */
   value?: unknown;
 }> {
   static {
@@ -80,10 +75,10 @@ export class UnreachableError extends ErrorBase<{
   "ja",
 );
 
-/**************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
 
 /**
- * ステージ 3 のデコレーターがサポートされていないと判定された場合に投げられるエラーです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#decorator-support-error)
  */
 export class DecoratorSupportError extends ErrorBase {
   static {
@@ -107,10 +102,10 @@ export class DecoratorSupportError extends ErrorBase {
   "ja",
 );
 
-/**************************************************************************************************/
+// -------------------------------------------------------------------------------------------------
 
 /**
- * ロックの昇格しようとした場合に投げられるエラーです。
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#lock-escalation-error)
  */
 export class LockEscalationError extends ErrorBase {
   static {

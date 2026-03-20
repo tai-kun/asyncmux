@@ -16,7 +16,7 @@
     "package.json",
     "LICENSE"
   ],
-  "homepage": "https://github.com/tai-kun/asyncmux",
+  "homepage": "https://tai-kun.github.io/asyncmux/guide/what-is-asyncmux.html",
   "repository": {
     "url": "https://github.com/tai-kun/asyncmux"
   },
@@ -36,6 +36,7 @@
     "playwright": "^1.57.0",
     "typescript": "^5.9.3",
     "valibot": "^1.2.0",
+    "vitepress": "^1.6.4",
     "vitest": "^4.0.16"
   },
   "scripts": {

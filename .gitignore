@@ -220,4 +220,6 @@ $RECYCLE.BIN/
 .history/
 .Trash/
 dist/
+cache/
 __screenshots__/
+!/website/.vitepress/dist/
