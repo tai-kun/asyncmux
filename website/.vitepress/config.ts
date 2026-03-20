@@ -4,6 +4,8 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "asyncmux",
 
+  base: "https://tai-kun.github.io/asyncmux",
+
   outDir: "../docs",
 
   rewrites: {
