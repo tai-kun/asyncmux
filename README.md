@@ -1,5 +1,5 @@
 # asyncmux
 
-[ドキュメント]()
+[ドキュメント](https://tai-kun.github.io/asyncmux/)
 
-[Document]()
+[Document](https://tai-kun.github.io/asyncmux/en/)
