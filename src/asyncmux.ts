@@ -232,7 +232,7 @@ type ManualAsyncmuxOptions = Readonly<{
   /**
    * ロックの獲得を中止するシグナルです。
    */
-  abortSignal?: AbortSignal | undefined;
+  signal?: AbortSignal | undefined;
 }>;
 
 /**
@@ -244,8 +244,8 @@ function manualLock(
   decorator: (method: AsyncClassMethod, context: unknown) => AsyncClassMethod,
   options: ManualAsyncmuxOptions | undefined,
 ): Promise<AsyncmuxLock> {
-  const { abortSignal } = options || {};
-  abortSignal?.throwIfAborted();
+  const { signal } = options || {};
+  signal?.throwIfAborted();
 
   const {
     resolve: error,
@@ -288,8 +288,8 @@ function manualLock(
     return Promise.reject(ex);
   }
 
-  const onAbort = () => error(abortSignal!.reason);
-  abortSignal?.addEventListener("abort", onAbort, { once: true });
+  const onAbort = () => error(signal!.reason);
+  signal?.addEventListener("abort", onAbort, { once: true });
 
   return Promise.race([
     errorPromise.then(error => ({ error })),
@@ -305,7 +305,7 @@ function manualLock(
       }
     })
     .finally(() => {
-      abortSignal?.removeEventListener("abort", onAbort);
+      signal?.removeEventListener("abort", onAbort);
     });
 }
 
@@ -570,7 +570,7 @@ type AsyncmuxLockOptions = Readonly<{
   /**
    * ロックの獲得を中止するシグナルです。
    */
-  abortSignal?: AbortSignal | undefined;
+  signal?: AbortSignal | undefined;
 }>;
 
 /**
@@ -691,11 +691,11 @@ class Asyncmux {
   public async lock(arg0: string | AsyncmuxLockOptions | undefined = {}): Promise<AsyncmuxLock> {
     const {
       key,
-      abortSignal,
+      signal,
     } = typeof arg0 === "string"
       ? { key: arg0 }
       : arg0;
-    abortSignal?.throwIfAborted();
+    signal?.throwIfAborted();
     const queueEntries = this.#getQueueEntries(key);
     const nextFuncList: (() => void)[] = [];
     const readyPromiseList: Promise<void>[] = [];
@@ -769,7 +769,7 @@ class Asyncmux {
       resolve: abort,
       promise: abortPromise,
     } = Promise.withResolvers();
-    abortSignal?.addEventListener("abort", abort, { once: true });
+    signal?.addEventListener("abort", abort, { once: true });
 
     const {
       resolve: unlock,
@@ -782,10 +782,10 @@ class Asyncmux {
 
     return Promise.race([
       abortPromise.then(() => ({
-        error: abortSignal?.reason,
+        error: signal?.reason,
       })),
       readyPromise.then(() => {
-        abortSignal?.removeEventListener("abort", abort);
+        signal?.removeEventListener("abort", abort);
         return new AsyncmuxLock(unlock);
       }),
     ])
@@ -838,11 +838,11 @@ class Asyncmux {
   public async rLock(arg0: string | AsyncmuxLockOptions | undefined = {}): Promise<AsyncmuxLock> {
     const {
       key,
-      abortSignal,
+      signal,
     } = typeof arg0 === "string"
       ? { key: arg0 }
       : arg0;
-    abortSignal?.throwIfAborted();
+    signal?.throwIfAborted();
     const queueEntries = this.#getQueueEntries(key);
     const nextFuncList: (() => void)[] = [];
     const readyPromiseList: Promise<void>[] = [];
@@ -900,7 +900,7 @@ class Asyncmux {
       resolve: abort,
       promise: abortPromise,
     } = Promise.withResolvers();
-    abortSignal?.addEventListener("abort", abort, { once: true });
+    signal?.addEventListener("abort", abort, { once: true });
 
     const {
       resolve: unlock,
@@ -913,10 +913,10 @@ class Asyncmux {
 
     return Promise.race([
       abortPromise.then(() => ({
-        error: abortSignal?.reason,
+        error: signal?.reason,
       })),
       readyPromise.then(() => {
-        abortSignal?.removeEventListener("abort", abort);
+        signal?.removeEventListener("abort", abort);
         return new AsyncmuxLock(unlock);
       }),
     ])
