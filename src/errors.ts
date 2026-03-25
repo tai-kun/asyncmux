@@ -1,5 +1,7 @@
 import { type ErrorMeta, I18nErrorBase, initErrorMessage, setErrorMessage } from "i18n-error-base";
 
+export { setErrorMessage } from "i18n-error-base";
+
 // -------------------------------------------------------------------------------------------------
 //
 // ユーティリティー

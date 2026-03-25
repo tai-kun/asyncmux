@@ -85,10 +85,8 @@ type QueueItem =
   | QueueItemR
   | QueueItemG;
 
-/**
- * 獲得したロックを解除するためのオブジェクトです。
- * `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
- */
+// 獲得したロックを解除するためのオブジェクトです。
+// `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
 class AsyncmuxLock implements Disposable {
   /**
    * ロックしている `Promise` オブジェクトを解除する関数です。
@@ -103,6 +101,7 @@ class AsyncmuxLock implements Disposable {
   /**
    * `AsyncmuxLock` クラスの新しいインスタンスを初期化します。
    *
+   * @internal
    * @param resolve ロックしている `Promise` オブジェクトを解除する関数です。
    */
   public constructor(resolve: () => void) {
@@ -110,17 +109,11 @@ class AsyncmuxLock implements Disposable {
     this.#unlockCalled = false;
   }
 
-  /**
-   * 獲得したロックを解除します。
-   */
   public unlock(): void {
     this.#unlockCalled = true;
     this.#resolve();
   }
 
-  /**
-   * 獲得したロックを破棄します。
-   */
   public [Symbol.dispose](): void {
     if (this.#unlockCalled) {
       return;
@@ -576,7 +569,7 @@ class Asyncmux {
   readonly #partialQueue: Map<string, QueueItem[]>;
 
   /**
-   * `Asyncmux` クラスの新しいインスタンスを初期化します。
+   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html)
    */
   public constructor() {
     this.#globalQueue = [];
@@ -890,27 +883,17 @@ class Asyncmux {
   }
 }
 
-/**
- * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#asyncmux-create)
- */
-function createAsyncmux(): Asyncmux {
-  return new Asyncmux();
-}
-
 // -------------------------------------------------------------------------------------------------
 //
 // Export
 //
 // -------------------------------------------------------------------------------------------------
 
-export type { Asyncmux, AsyncmuxLock, AsyncmuxLockOptions };
+export type { AsyncmuxLock, AsyncmuxLockOptions };
+
+export { Asyncmux };
 
 export default /*#__PURE__*/ Object.assign(asyncmux, {
-  /**
-   * [API Reference](https://tai-kun.github.io/asyncmux/reference/general-utilities.html#asyncmux-create)
-   */
-  create: createAsyncmux,
-
   /**
    * [API Reference](https://tai-kun.github.io/asyncmux/reference/class-method-utilities.html#decorator-asyncmux-readonly)
    */
