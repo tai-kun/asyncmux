@@ -10,14 +10,14 @@ While General Utilities offer more flexibility than class-method-based locking, 
 
 ## API {#api}
 
-### `asyncmux.create()` {#asyncmux-create}
+### `Asyncmux` {#asyncmux-create}
 
-The `asyncmux.create()` function creates a lock object used to acquire read/write locks. The scope of mutual exclusion is limited to the specific lock object returned.
+The `Asyncmux` class creates a lock object used to acquire read/write locks. The scope of mutual exclusion is limited to the specific lock object returned.
 
 #### Signature {#create-signature}
 
 ```ts
-function asyncmux.create(): {
+class Asyncmux {
   lock(key?: string): Promise<Disposable & {
     unlock(): void;
   }>;
@@ -51,9 +51,9 @@ A lock object used to acquire read/write locks.
 #### Example {#create-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 ```
 
 ---
@@ -79,9 +79,9 @@ A `Promise` that resolves to an unlocker object. To release the lock, use the `u
 The following example uses the `using` statement to acquire a write lock.
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.lock();
@@ -91,9 +91,9 @@ const mux = asyncmux.create();
 The following example manually acquires and releases a write lock.
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.lock();
 try {
   // ...
@@ -129,9 +129,9 @@ A `Promise` that resolves to an unlocker object. Release the lock using the `usi
 #### Example {#lock-key-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.lock("resource(1)");
@@ -174,9 +174,9 @@ A `Promise` that resolves to an unlocker object.
 #### Example {#lock-options-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 
 {
@@ -205,9 +205,9 @@ A `Promise` that resolves to an unlocker object.
 #### Example {#rlock-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.rLock();
@@ -237,9 +237,9 @@ function rLock(key: string): Promise<Disposable & {
 #### Example {#rlock-key-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.rLock("resource(1)");
 try {
   // ...
@@ -280,9 +280,9 @@ function rLock(
 #### Example {#rlock-options-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 
 const lock = await mux.rLock({ signal: ac.signal });

@@ -10,14 +10,14 @@
 
 ## API {#api}
 
-### `asyncmux.create()` {#asyncmux-create}
+### `Asyncmux` {#asyncmux-create}
 
-関数 `asyncmux.create` は、書き込み / 読み取りロックを獲得するためのロックオブジェクトを作成します。排他制御の影響範囲は、このロックオブジェクトに限定されます。
+クラス `Asyncmux` は、書き込み / 読み取りロックを獲得するためのロックオブジェクトを作成します。排他制御の影響範囲は、このロックオブジェクトに限定されます。
 
 #### シグネチャー {#create-signature}
 
 ```ts
-function asyncmux.create(): {
+class Asyncmux {
   lock(key?: string): Promise<Disposable & {
     unlock(): void;
   }>;
@@ -51,9 +51,9 @@ function asyncmux.create(): {
 #### 使用例 {#create-example}
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 ```
 
 ### `mux.lock()` {#mux-lock}
@@ -77,9 +77,9 @@ function lock(): Promise<Disposable & {
 以下の例では、クラスメソッド内で `using` 構文を使用して書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.lock();
@@ -89,9 +89,9 @@ const mux = asyncmux.create();
 以下の例では、書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.lock();
 try {
   // ...
@@ -129,9 +129,9 @@ function lock(key: string): Promise<Disposable & {
 以下の例では、クラスメソッド内で `using` 構文を使用して書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.lock("resource(1)");
@@ -141,9 +141,9 @@ const mux = asyncmux.create();
 以下の例では、書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.lock("resource(1)");
 try {
   // ...
@@ -192,9 +192,9 @@ function lock(
 以下の例では、クラスメソッド内で `using` 構文を使用し、特定のリソースに対して書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 
 {
@@ -205,9 +205,9 @@ const ac = new AbortController();
 以下の例では、全リソースに対して書き込みロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 const lock = await mux.lock({ signal: ac.signal });
 try {
@@ -238,9 +238,9 @@ function lock(): Promise<Disposable & {
 以下の例では、クラスメソッド内で `using` 構文を使用して読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.rLock();
@@ -250,9 +250,9 @@ const mux = asyncmux.create();
 以下の例では、読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.rLock();
 try {
   // ...
@@ -290,9 +290,9 @@ function lock(key: string): Promise<Disposable & {
 以下の例では、クラスメソッド内で `using` 構文を使用して読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 
 {
   using _ = await mux.rLock("resource(1)");
@@ -302,9 +302,9 @@ const mux = asyncmux.create();
 以下の例では、読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const lock = await mux.rLock("resource(1)");
 try {
   // ...
@@ -353,9 +353,9 @@ function lock(
 以下の例では、クラスメソッド内で `using` 構文を使用し、特定のリソースに対して読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 
 {
@@ -366,9 +366,9 @@ const ac = new AbortController();
 以下の例では、全リソースに対して読み取りロックを獲得します。
 
 ```ts
-import { asyncmux } from "asyncmux";
+import { Asyncmux } from "asyncmux";
 
-const mux = asyncmux.create();
+const mux = new Asyncmux();
 const ac = new AbortController();
 const lock = await mux.rLock({ signal: ac.signal });
 try {
