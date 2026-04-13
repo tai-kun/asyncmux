@@ -76,7 +76,7 @@ class Runner {
 
 ```ts
 class Runner {
-  isOpen: boolean
+  isOpen: boolean;
 
   async runWithMutex(ms: number, value: string) {
     if (!this.isOpen) {
@@ -96,7 +96,7 @@ class Runner {
 
 ```ts
 class Runner {
-  isOpen: boolean
+  isOpen: boolean;
 
   async runWithMutex(ms: number, value: string) {
     if (!this.isOpen) {
@@ -150,7 +150,7 @@ await Promise.all([
   (async () => {
     using _ = await mux.lock("key1"); // key1 が空くまで待機
     await task();
-  })()
+  })(),
 ]);
 ```
 
@@ -191,9 +191,9 @@ class Runner {
 - `W`: 書き込みロック
 - `W`: 読み取りロック
 
-| ケース | 順序保証 |
-| --- | ------ |
-| `W(1)` → `W(2)` | `W(1)` → `W(2)`（FIFO）|
+| ケース          | 順序保証                                       |
+| --------------- | ---------------------------------------------- |
+| `W(1)` → `W(2)` | `W(1)` → `W(2)`（FIFO）                        |
 | `R(1)` → `R(2)` | 非保証。`R(1)` → `R(2)` または `R(2)` → `R(1)` |
-| `W` → `R` | `W` → `R` |
-| `R` → `W` | `R` → `W` |
+| `W` → `R`       | `W` → `R`                                      |
+| `R` → `W`       | `R` → `W`                                      |

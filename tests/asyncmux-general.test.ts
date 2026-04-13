@@ -1,7 +1,8 @@
 import { beforeEach, describe, test } from "vitest";
+
 import Asyncmux from "../src/asyncmux-general.js";
 
-const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 let log: string[];
 
 beforeEach(() => {
@@ -155,12 +156,7 @@ describe("lock, rLock", () => {
       })(),
     ]);
 
-    expect(log).toEqual([
-      "W-1 start",
-      "W-1 end",
-      "R-1 start",
-      "R-1 end",
-    ]);
+    expect(log).toEqual(["W-1 start", "W-1 end", "R-1 start", "R-1 end"]);
   });
 
   test("読み取りロック中に書き込みロックは待機する", async ({ expect }) => {
@@ -176,12 +172,7 @@ describe("lock, rLock", () => {
       })(),
     ]);
 
-    expect(log).toEqual([
-      "R-1 start",
-      "R-1 end",
-      "W-1 start",
-      "W-1 end",
-    ]);
+    expect(log).toEqual(["R-1 start", "R-1 end", "W-1 start", "W-1 end"]);
   });
 });
 

@@ -55,10 +55,10 @@ function assertStage3ClassMethodDecoratorSupport(
   context: unknown,
 ): asserts context is ClassMethodDecoratorContext {
   if (
-    context
-    && typeof context === "object"
-    && "addInitializer" in context
-    && typeof context.addInitializer === "function"
+    context &&
+    typeof context === "object" &&
+    "addInitializer" in context &&
+    typeof context.addInitializer === "function"
   ) {
     return;
   }
@@ -108,18 +108,9 @@ function manualLock(
   const { signal } = options || {};
   signal?.throwIfAborted();
 
-  const {
-    resolve: error,
-    promise: errorPromise,
-  } = Promise.withResolvers();
-  const {
-    resolve: ready,
-    promise: readyPromise,
-  } = Promise.withResolvers<void>();
-  const {
-    resolve: unlock,
-    promise: unlockPromise,
-  } = Promise.withResolvers<void>();
+  const { resolve: error, promise: errorPromise } = Promise.withResolvers();
+  const { resolve: ready, promise: readyPromise } = Promise.withResolvers<void>();
+  const { resolve: unlock, promise: unlockPromise } = Promise.withResolvers<void>();
 
   try {
     const waitForUnlock = async () => {
@@ -137,9 +128,7 @@ function manualLock(
       initializer.call(this_);
     }
 
-    method
-      .call(this_)
-      .catch(error);
+    method.call(this_).catch(error);
   } catch (ex) {
     // 未解決の `Promise` を解決します。
     error(null);
@@ -153,10 +142,10 @@ function manualLock(
   signal?.addEventListener("abort", onAbort, { once: true });
 
   return Promise.race([
-    errorPromise.then(error => ({ error })),
+    errorPromise.then((error) => ({ error })),
     readyPromise.then(() => new AsyncmuxLock(unlock)),
   ])
-    .then(result => {
+    .then((result) => {
       if ("error" in result) {
         unlock(); // 未解決の `unlockPromise` を解決します。
         return Promise.reject(result.error);
@@ -200,10 +189,7 @@ function asyncmuxDecorator(method: AsyncClassMethod, context: unknown): AsyncCla
     const latestItem = context.queue[context.queue.length - 1];
     switch (latestItem?.type) {
       case "R": {
-        const {
-          promise,
-          resolve,
-        } = Promise.withResolvers<void>();
+        const { promise, resolve } = Promise.withResolvers<void>();
         writableItem = {
           type: "W",
           start: resolve,
@@ -248,10 +234,7 @@ function asyncmuxDecorator(method: AsyncClassMethod, context: unknown): AsyncCla
       // 2 回連続で `next` を呼び出すため、後続のステップを実行することができます。
       writableItem.steps.push(next);
     } else {
-      const {
-        promise,
-        resolve,
-      } = Promise.withResolvers<void>();
+      const { promise, resolve } = Promise.withResolvers<void>();
       stepPromise = promise;
       writableItem.steps.push(resolve);
     }
@@ -322,10 +305,7 @@ function asyncmuxReadonlyDecorator(method: AsyncClassMethod, context: unknown): 
         break;
 
       case "W": {
-        const {
-          promise,
-          resolve,
-        } = Promise.withResolvers<void>();
+        const { promise, resolve } = Promise.withResolvers<void>();
         readonlyItem = {
           type: "R",
           start: resolve,

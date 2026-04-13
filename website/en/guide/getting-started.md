@@ -76,7 +76,7 @@ Call `asyncmux(this)` or `asyncmux.readonly(this)`.
 
 ```ts
 class Runner {
-  isOpen: boolean
+  isOpen: boolean;
 
   async runWithMutex(ms: number, value: string) {
     if (!this.isOpen) {
@@ -96,7 +96,7 @@ Alternatively, using the classic `try...finally` pattern:
 
 ```ts
 class Runner {
-  isOpen: boolean
+  isOpen: boolean;
 
   async runWithMutex(ms: number, value: string) {
     if (!this.isOpen) {
@@ -150,7 +150,7 @@ await Promise.all([
   (async () => {
     using _ = await mux.lock("key1"); // Waits until key1 is released
     await task();
-  })()
+  })(),
 ]);
 ```
 
@@ -191,9 +191,9 @@ class Runner {
 - `W`: Write Lock
 - `R`: Read Lock
 
-| Case | Order Guarantee |
-| --- | ------ |
-| `W(1)` → `W(2)` | `W(1)` → `W(2)` (FIFO) |
+| Case            | Order Guarantee                                  |
+| --------------- | ------------------------------------------------ |
+| `W(1)` → `W(2)` | `W(1)` → `W(2)` (FIFO)                           |
 | `R(1)` → `R(2)` | No guarantee. `R(1)` → `R(2)` or `R(2)` → `R(1)` |
-| `W` → `R` | `W` → `R` |
-| `R` → `W` | `R` → `W` |
+| `W` → `R`       | `W` → `R`                                        |
+| `R` → `W`       | `R` → `W`                                        |

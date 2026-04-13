@@ -1,8 +1,9 @@
 import { describe, test } from "vitest";
+
 import asyncmux from "../src/asyncmux-class-method.js";
 import { LockEscalationError } from "../src/errors.js";
 
-const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 describe("デコレーター", () => {
   describe("lock", () => {
@@ -66,10 +67,7 @@ describe("デコレーター", () => {
         async write1(ms: number, value: string) {
           await sleep(ms);
           this.log.push("W1:" + value);
-          await Promise.all([
-            this.write2(200, "A"),
-            this.write2(0, "B"),
-          ]);
+          await Promise.all([this.write2(200, "A"), this.write2(0, "B")]);
         }
 
         @asyncmux
@@ -81,19 +79,9 @@ describe("デコレーター", () => {
 
       const log: string[] = [];
       const runner = new Runner(log);
-      await Promise.all([
-        runner.write1(200, "A"),
-        runner.write1(0, "B"),
-      ]);
+      await Promise.all([runner.write1(200, "A"), runner.write1(0, "B")]);
 
-      expect(log).toStrictEqual([
-        "W1:A",
-        "W2:A",
-        "W2:B",
-        "W1:B",
-        "W2:A",
-        "W2:B",
-      ]);
+      expect(log).toStrictEqual(["W1:A", "W2:A", "W2:B", "W1:B", "W2:A", "W2:B"]);
     });
   });
 
@@ -157,10 +145,7 @@ describe("デコレーター", () => {
         async read1(ms: number, value: string) {
           await sleep(ms);
           this.log.push("R1:" + value);
-          await Promise.all([
-            this.read2(200, "A"),
-            this.read2(0, "B"),
-          ]);
+          await Promise.all([this.read2(200, "A"), this.read2(0, "B")]);
         }
 
         @asyncmux.readonly
@@ -173,11 +158,7 @@ describe("デコレーター", () => {
       const log: string[] = [];
       const runner = new Runner(log);
       await runner.read1(0, "A");
-      expect(log).toStrictEqual([
-        "R1:A",
-        "R2:B",
-        "R2:A",
-      ]);
+      expect(log).toStrictEqual(["R1:A", "R2:B", "R2:A"]);
     });
   });
 
@@ -214,14 +195,7 @@ describe("デコレーター", () => {
         runner.read(0, "B"),
       ]);
 
-      expect(log).toStrictEqual([
-        "W:A",
-        "W:B",
-        "R:B",
-        "R:A",
-        "W:C",
-        "R:B",
-      ]);
+      expect(log).toStrictEqual(["W:A", "W:B", "R:B", "R:A", "W:C", "R:B"]);
     });
 
     test("直列の中で並行を実行可能", async ({ expect }) => {
@@ -236,10 +210,7 @@ describe("デコレーター", () => {
         async write(ms: number, value: string) {
           await sleep(ms);
           this.log.push("W:" + value);
-          await Promise.all([
-            this.read(200, "A"),
-            this.read(0, "B"),
-          ]);
+          await Promise.all([this.read(200, "A"), this.read(0, "B")]);
         }
 
         @asyncmux.readonly
@@ -252,11 +223,7 @@ describe("デコレーター", () => {
       const log: string[] = [];
       const runner = new Runner(log);
       await runner.write(0, "A");
-      expect(log).toStrictEqual([
-        "W:A",
-        "R:B",
-        "R:A",
-      ]);
+      expect(log).toStrictEqual(["W:A", "R:B", "R:A"]);
     });
 
     test("直列の中で直列と並列を組み合わせ可能", async ({ expect }) => {
@@ -298,15 +265,7 @@ describe("デコレーター", () => {
       const runner = new Runner(log);
       await runner.write1(200, "A");
 
-      expect(log).toStrictEqual([
-        "W1:A",
-        "W2:A",
-        "W2:B",
-        "R:B",
-        "R:A",
-        "W2:C",
-        "R:B",
-      ]);
+      expect(log).toStrictEqual(["W1:A", "W2:A", "W2:B", "R:B", "R:A", "W2:C", "R:B"]);
     });
 
     test("並行の中で直列を実行しようとするとエラー", async ({ expect }) => {
@@ -334,9 +293,7 @@ describe("デコレーター", () => {
       const log: string[] = [];
       const runner = new Runner(log);
 
-      await expect(runner.read(0, "A"))
-        .rejects
-        .toThrow(LockEscalationError);
+      await expect(runner.read(0, "A")).rejects.toThrow(LockEscalationError);
     });
   });
 });
@@ -403,10 +360,7 @@ describe("マニュアル", () => {
           using _ = await asyncmux(this);
           await sleep(ms);
           this.log.push("W1:" + value);
-          await Promise.all([
-            this.write2(200, "A"),
-            this.write2(0, "B"),
-          ]);
+          await Promise.all([this.write2(200, "A"), this.write2(0, "B")]);
         }
 
         async write2(ms: number, value: string) {
@@ -418,19 +372,9 @@ describe("マニュアル", () => {
 
       const log: string[] = [];
       const runner = new Runner(log);
-      await Promise.all([
-        runner.write1(200, "A"),
-        runner.write1(0, "B"),
-      ]);
+      await Promise.all([runner.write1(200, "A"), runner.write1(0, "B")]);
 
-      expect(log).toStrictEqual([
-        "W1:A",
-        "W2:A",
-        "W2:B",
-        "W1:B",
-        "W2:A",
-        "W2:B",
-      ]);
+      expect(log).toStrictEqual(["W1:A", "W2:A", "W2:B", "W1:B", "W2:A", "W2:B"]);
     });
   });
 
@@ -494,10 +438,7 @@ describe("マニュアル", () => {
           using _ = await asyncmux.readonly(this);
           await sleep(ms);
           this.log.push("R1:" + value);
-          await Promise.all([
-            this.read2(200, "A"),
-            this.read2(0, "B"),
-          ]);
+          await Promise.all([this.read2(200, "A"), this.read2(0, "B")]);
         }
 
         async read2(ms: number, value: string) {
@@ -510,11 +451,7 @@ describe("マニュアル", () => {
       const log: string[] = [];
       const runner = new Runner(log);
       await runner.read1(0, "A");
-      expect(log).toStrictEqual([
-        "R1:A",
-        "R2:B",
-        "R2:A",
-      ]);
+      expect(log).toStrictEqual(["R1:A", "R2:B", "R2:A"]);
     });
   });
 
@@ -551,14 +488,7 @@ describe("マニュアル", () => {
         runner.read(0, "B"),
       ]);
 
-      expect(log).toStrictEqual([
-        "W:A",
-        "W:B",
-        "R:B",
-        "R:A",
-        "W:C",
-        "R:B",
-      ]);
+      expect(log).toStrictEqual(["W:A", "W:B", "R:B", "R:A", "W:C", "R:B"]);
     });
 
     test("直列の中で並行を実行可能", async ({ expect }) => {
@@ -573,10 +503,7 @@ describe("マニュアル", () => {
           using _ = await asyncmux(this);
           await sleep(ms);
           this.log.push("W:" + value);
-          await Promise.all([
-            this.read(200, "A"),
-            this.read(0, "B"),
-          ]);
+          await Promise.all([this.read(200, "A"), this.read(0, "B")]);
         }
 
         async read(ms: number, value: string) {
@@ -589,11 +516,7 @@ describe("マニュアル", () => {
       const log: string[] = [];
       const runner = new Runner(log);
       await runner.write(0, "A");
-      expect(log).toStrictEqual([
-        "W:A",
-        "R:B",
-        "R:A",
-      ]);
+      expect(log).toStrictEqual(["W:A", "R:B", "R:A"]);
     });
 
     test("直列の中で直列と並列を組み合わせ可能", async ({ expect }) => {
@@ -635,15 +558,7 @@ describe("マニュアル", () => {
       const runner = new Runner(log);
       await runner.write1(200, "A");
 
-      expect(log).toStrictEqual([
-        "W1:A",
-        "W2:A",
-        "W2:B",
-        "R:B",
-        "R:A",
-        "W2:C",
-        "R:B",
-      ]);
+      expect(log).toStrictEqual(["W1:A", "W2:A", "W2:B", "R:B", "R:A", "W2:C", "R:B"]);
     });
 
     test("並行の中で直列を実行しようとするとエラー", async ({ expect }) => {
@@ -671,9 +586,7 @@ describe("マニュアル", () => {
       const log: string[] = [];
       const runner = new Runner(log);
 
-      await expect(runner.read(0, "A"))
-        .rejects
-        .toThrow(LockEscalationError);
+      await expect(runner.read(0, "A")).rejects.toThrow(LockEscalationError);
     });
   });
 

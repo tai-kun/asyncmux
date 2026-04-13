@@ -13,10 +13,7 @@
 #### シグネチャー
 
 ```ts
-function asyncmux<TMethod extends AsyncClassMethod>(
-  method: TMethod,
-  context: unknown,
-): TMethod;
+function asyncmux<TMethod extends AsyncClassMethod>(method: TMethod, context: unknown): TMethod;
 ```
 
 #### 引数 {#decorator-asyncmux-arguments}
@@ -246,9 +243,11 @@ function asyncmux(
   options?: {
     signal?: AbortSignal;
   },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 引数 {#functional-asyncmux-arguments}

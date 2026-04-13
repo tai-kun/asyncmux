@@ -1,4 +1,5 @@
 import { tryCaptureStackTrace } from "try-capture-stack-trace";
+
 import { UnreachableError } from "./errors.js";
 
 /**

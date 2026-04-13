@@ -13,10 +13,7 @@ The `@asyncmux` class method decorator acquires a write lock and executes the cl
 #### Signature
 
 ```ts
-function asyncmux<TMethod extends AsyncClassMethod>(
-  method: TMethod,
-  context: unknown,
-): TMethod;
+function asyncmux<TMethod extends AsyncClassMethod>(method: TMethod, context: unknown): TMethod;
 ```
 
 #### Arguments {#decorator-asyncmux-arguments}
@@ -248,9 +245,11 @@ function asyncmux(
   options?: {
     signal?: AbortSignal;
   },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Arguments {#functional-asyncmux-arguments}

@@ -18,30 +18,28 @@
 
 ```ts
 class Asyncmux {
-  lock(key?: string): Promise<Disposable & {
-    unlock(): void;
-  }>;
-  lock(
-    options: {
-      key?: string;
-      signal?: AbortSignal;
+  lock(key?: string): Promise<
+    Disposable & {
+      unlock(): void;
     }
-  ): Promise<Disposable & {
-    unlock(): void;
-  }>;
+  >;
+  lock(options: { key?: string; signal?: AbortSignal }): Promise<
+    Disposable & {
+      unlock(): void;
+    }
+  >;
 
-  rLock(key?: string): Promise<Disposable & {
-    unlock(): void;
-  }>;
-  rLock(
-    options: {
-      key?: string;
-      signal?: AbortSignal;
+  rLock(key?: string): Promise<
+    Disposable & {
+      unlock(): void;
     }
-  ): Promise<Disposable & {
-    unlock(): void;
-  }>;
-};
+  >;
+  rLock(options: { key?: string; signal?: AbortSignal }): Promise<
+    Disposable & {
+      unlock(): void;
+    }
+  >;
+}
 ```
 
 #### 返値 {#create-return-value}
@@ -63,9 +61,11 @@ const mux = new Asyncmux();
 #### シグネチャー {#lock-signature}
 
 ```ts
-function lock(): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 返値 {#lock-return-value}
@@ -107,9 +107,11 @@ try {
 #### シグネチャー {#lock-key-signature}
 
 ```ts
-function lock(key: string): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(key: string): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 引数 {#lock-key-arguments}
@@ -159,14 +161,11 @@ try {
 #### シグネチャー {#lock-options-signature}
 
 ```ts
-function lock(
-  options: {
-    key?: string;
-    signal?: AbortSignal;
-  },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(options: { key?: string; signal?: AbortSignal }): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 引数 {#lock-options-arguments}
@@ -224,9 +223,11 @@ try {
 #### シグネチャー {#rlock-signature}
 
 ```ts
-function lock(): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 返値 {#rlock-return-value}
@@ -268,9 +269,11 @@ try {
 #### シグネチャー {#rlock-key-signature}
 
 ```ts
-function lock(key: string): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(key: string): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 引数 {#rlock-key-arguments}
@@ -320,14 +323,11 @@ try {
 #### シグネチャー {#rlock-options-signature}
 
 ```ts
-function lock(
-  options: {
-    key?: string;
-    signal?: AbortSignal;
-  },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(options: { key?: string; signal?: AbortSignal }): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### 引数 {#rlock-options-arguments}

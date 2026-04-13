@@ -71,7 +71,4 @@ export type QueueItemG = {
 /**
  * キューアイテムの型です。
  */
-export type QueueItem =
-  | QueueItemW
-  | QueueItemR
-  | QueueItemG;
+export type QueueItem = QueueItemW | QueueItemR | QueueItemG;

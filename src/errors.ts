@@ -35,9 +35,9 @@ function formatErrorValue(value: unknown): string {
 /**
  * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#error-base)
  */
-export class ErrorBase<TMeta extends ErrorMeta | undefined = undefined>
-  extends I18nErrorBase<TMeta>
-{}
+export class ErrorBase<
+  TMeta extends ErrorMeta | undefined = undefined,
+> extends I18nErrorBase<TMeta> {}
 
 // -------------------------------------------------------------------------------------------------
 
@@ -59,21 +59,20 @@ export class UnreachableError extends ErrorBase<{
    */
   public constructor(args: [never?], options?: ErrorOptions | undefined) {
     super(options, args.length > 0 ? { value: args[0] } : {});
-    initErrorMessage(this, ({ meta }) => (
+    initErrorMessage(this, ({ meta }) =>
       "value" in meta
         ? "Encountered impossible value: " + formatErrorValue(meta.value)
-        : "Unreachable code reached"
-    ));
+        : "Unreachable code reached",
+    );
   }
 }
 
 /*#__PURE__*/ setErrorMessage(
   UnreachableError,
-  ({ meta }) => (
+  ({ meta }) =>
     "value" in meta
       ? "不可能な値に遭遇しました: " + formatErrorValue(meta.value)
-      : "到達できないコードに到達しました"
-  ),
+      : "到達できないコードに到達しました",
   "ja",
 );
 

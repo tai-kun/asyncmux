@@ -1,24 +1,20 @@
 import { defineConfig } from "vitest/config";
-import isDebugMode from "./_is-debug-mode.js";
+
+import isDebugMode from "./_is-debug-mode";
+import proposalDecorators from "./_proposal-decorators";
 
 export default defineConfig({
-  esbuild: {
-    target: [
-      "es2020",
-      "node22",
-    ],
+  plugins: [proposalDecorators()],
+  oxc: {
+    target: "es2020",
   },
   define: {
-    __DEBUG__: String(isDebugMode()),
+    __DEBUG__: `${isDebugMode}`,
     __CLIENT__: "false",
     __SERVER__: "true",
   },
   test: {
-    include: [
-      "tests/**/*.test.ts",
-    ],
-    exclude: [
-      "tests/**/*.client.test.ts",
-    ],
+    include: ["tests/**/*.test.ts"],
+    exclude: ["tests/**/*.client.test.ts"],
   },
 });

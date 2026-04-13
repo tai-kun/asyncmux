@@ -1,9 +1,21 @@
 /**
- * デバッグモードで実行されているか確認します。
- *
- * @returns デバッグモードなら `true` です。
+ * デバッグモードで実行されているかどうかです。
  */
-export default function isDebugMode(): boolean {
-  return ["DEBUG", "RUNNER_DEBUG", "ACTIONS_RUNNER_DEBUG", "ACTIONS_STEP_DEBUG"]
-    .some(k => ["1", "true"].includes(process.env[k]?.toLowerCase()!));
+let isDebugMode = false;
+
+for (const envName of ["DEBUG", "RUNNER_DEBUG", "ACTIONS_STEP_DEBUG", "ACTIONS_RUNNER_DEBUG"]) {
+  const envValue = process.env[envName]?.toLocaleLowerCase();
+  switch (envValue) {
+    case "":
+    case "1":
+    case "true":
+      isDebugMode = true;
+      break;
+  }
+
+  if (isDebugMode) {
+    break;
+  }
 }
+
+export default isDebugMode;

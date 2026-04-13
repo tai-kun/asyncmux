@@ -1,4 +1,5 @@
 import { test } from "vitest";
+
 import unreachable from "../src/_unreachable.js";
 import { UnreachableError } from "../src/errors.js";
 
@@ -6,8 +7,7 @@ test("引数なしで呼び出したとき、UnreachableError をスローする
   // Arrange & Act & Assert
   expect(() => {
     unreachable();
-  })
-    .toThrow(UnreachableError);
+  }).toThrow(UnreachableError);
 });
 
 test("引数ありで呼び出したとき、渡された値を含む UnreachableError を投げる", ({ expect }) => {

@@ -18,30 +18,28 @@ The `Asyncmux` class creates a lock object used to acquire read/write locks. The
 
 ```ts
 class Asyncmux {
-  lock(key?: string): Promise<Disposable & {
-    unlock(): void;
-  }>;
-  lock(
-    options: {
-      key?: string;
-      signal?: AbortSignal;
+  lock(key?: string): Promise<
+    Disposable & {
+      unlock(): void;
     }
-  ): Promise<Disposable & {
-    unlock(): void;
-  }>;
+  >;
+  lock(options: { key?: string; signal?: AbortSignal }): Promise<
+    Disposable & {
+      unlock(): void;
+    }
+  >;
 
-  rLock(key?: string): Promise<Disposable & {
-    unlock(): void;
-  }>;
-  rLock(
-    options: {
-      key?: string;
-      signal?: AbortSignal;
+  rLock(key?: string): Promise<
+    Disposable & {
+      unlock(): void;
     }
-  ): Promise<Disposable & {
-    unlock(): void;
-  }>;
-};
+  >;
+  rLock(options: { key?: string; signal?: AbortSignal }): Promise<
+    Disposable & {
+      unlock(): void;
+    }
+  >;
+}
 ```
 
 #### Return Value {#create-return-value}
@@ -65,9 +63,11 @@ The `mux.lock()` method acquires a write lock for all resources (global lock).
 #### Signature {#lock-signature}
 
 ```ts
-function lock(): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Return Value {#lock-return-value}
@@ -111,14 +111,17 @@ The `mux.lock(key)` method acquires a write lock for a specific resource.
 #### Signature {#lock-key-signature}
 
 ```ts
-function lock(key: string): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(key: string): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Arguments {#lock-key-arguments}
 
 `key`
+
 - **Type**: `string`
 - The key string identifying the resource to lock.
 
@@ -147,23 +150,22 @@ The `mux.lock(options)` method acquires a write lock for either a specific resou
 #### Signature {#lock-options-signature}
 
 ```ts
-function lock(
-  options: {
-    key?: string;
-    signal?: AbortSignal;
-  },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+function lock(options: { key?: string; signal?: AbortSignal }): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Arguments {#lock-options-arguments}
 
 `options.key`
+
 - **Type**: `string`
 - The key string identifying the resource to lock.
 
 `options.signal`
+
 - **Type**: `AbortSignal`
 - An abort signal used to cancel the lock acquisition.
 
@@ -193,9 +195,11 @@ The `mux.rLock()` method acquires a read lock for all resources.
 #### Signature {#rlock-signature}
 
 ```ts
-function rLock(): Promise<Disposable & {
-  unlock(): void;
-}>;
+function rLock(): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Return Value {#rlock-return-value}
@@ -223,14 +227,17 @@ The `mux.rLock(key)` method acquires a read lock for a specific resource.
 #### Signature {#rlock-key-signature}
 
 ```ts
-function rLock(key: string): Promise<Disposable & {
-  unlock(): void;
-}>;
+function rLock(key: string): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Arguments {#rlock-key-arguments}
 
 `key`
+
 - **Type**: `string`
 - The key string identifying the resource to lock.
 
@@ -257,23 +264,22 @@ The `mux.rLock(options)` method acquires a read lock for either a specific resou
 #### Signature {#rlock-options-signature}
 
 ```ts
-function rLock(
-  options: {
-    key?: string;
-    signal?: AbortSignal;
-  },
-): Promise<Disposable & {
-  unlock(): void;
-}>;
+function rLock(options: { key?: string; signal?: AbortSignal }): Promise<
+  Disposable & {
+    unlock(): void;
+  }
+>;
 ```
 
 #### Arguments {#rlock-options-arguments}
 
 `options.key`
+
 - **Type**: `string`
 - The key string identifying the target resource.
 
 `options.signal`
+
 - **Type**: `AbortSignal`
 - An abort signal used to cancel the lock acquisition.
 

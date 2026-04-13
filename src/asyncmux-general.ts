@@ -69,10 +69,7 @@ export default class Asyncmux {
         };
         this.#globalQueue.push(globalItem);
       } else if (latestItem.type !== "G") {
-        const {
-          resolve,
-          promise,
-        } = Promise.withResolvers<void>();
+        const { resolve, promise } = Promise.withResolvers<void>();
         globalItem = {
           type: "G",
           start: resolve,
@@ -122,12 +119,7 @@ export default class Asyncmux {
   public lock(option?: string | AsyncmuxLockOptions | undefined): Promise<AsyncmuxLock>;
 
   public async lock(arg0: string | AsyncmuxLockOptions | undefined = {}): Promise<AsyncmuxLock> {
-    const {
-      key,
-      signal,
-    } = typeof arg0 === "string"
-      ? { key: arg0 }
-      : arg0;
+    const { key, signal } = typeof arg0 === "string" ? { key: arg0 } : arg0;
     signal?.throwIfAborted();
     const queueEntries = this.#getQueueEntries(key);
     const nextFuncList: (() => void)[] = [];
@@ -144,10 +136,7 @@ export default class Asyncmux {
         };
         queue.push(writableItem);
       } else if (latestItem.type !== "W") {
-        const {
-          resolve,
-          promise,
-        } = Promise.withResolvers<void>();
+        const { resolve, promise } = Promise.withResolvers<void>();
         writableItem = {
           type: "W",
           start: resolve,
@@ -181,10 +170,7 @@ export default class Asyncmux {
         stepPromise = Promise.resolve();
         writableItem.steps.push(next);
       } else {
-        const {
-          resolve,
-          promise,
-        } = Promise.withResolvers<void>();
+        const { resolve, promise } = Promise.withResolvers<void>();
         stepPromise = promise;
         writableItem.steps.push(resolve);
       }
@@ -195,23 +181,15 @@ export default class Asyncmux {
       readyPromiseList.push(readyPromise);
     }
 
-    const next = () => nextFuncList.forEach(next => next());
+    const next = () => nextFuncList.forEach((next) => next());
     const readyPromise = Promise.all(readyPromiseList);
 
-    const {
-      resolve: abort,
-      promise: abortPromise,
-    } = Promise.withResolvers();
+    const { resolve: abort, promise: abortPromise } = Promise.withResolvers();
     signal?.addEventListener("abort", abort, { once: true });
 
-    const {
-      resolve: unlock,
-      promise: unlockPromise,
-    } = Promise.withResolvers<void>();
+    const { resolve: unlock, promise: unlockPromise } = Promise.withResolvers<void>();
 
-    readyPromise
-      .then(() => unlockPromise)
-      .finally(next);
+    readyPromise.then(() => unlockPromise).finally(next);
 
     return Promise.race([
       abortPromise.then(() => ({
@@ -221,16 +199,15 @@ export default class Asyncmux {
         signal?.removeEventListener("abort", abort);
         return new AsyncmuxLock(unlock);
       }),
-    ])
-      .then(result => {
-        if ("error" in result) {
-          unlock(); // 未解決の `unlockPromise` を解決します。
-          return Promise.reject(result.error);
-        } else {
-          abort(null); // 未解決の `abortPromise` を解決します。
-          return Promise.resolve(result);
-        }
-      });
+    ]).then((result) => {
+      if ("error" in result) {
+        unlock(); // 未解決の `unlockPromise` を解決します。
+        return Promise.reject(result.error);
+      } else {
+        abort(null); // 未解決の `abortPromise` を解決します。
+        return Promise.resolve(result);
+      }
+    });
   }
 
   /**
@@ -254,12 +231,7 @@ export default class Asyncmux {
   public rLock(option?: string | AsyncmuxLockOptions | undefined): Promise<AsyncmuxLock>;
 
   public async rLock(arg0: string | AsyncmuxLockOptions | undefined = {}): Promise<AsyncmuxLock> {
-    const {
-      key,
-      signal,
-    } = typeof arg0 === "string"
-      ? { key: arg0 }
-      : arg0;
+    const { key, signal } = typeof arg0 === "string" ? { key: arg0 } : arg0;
     signal?.throwIfAborted();
     const queueEntries = this.#getQueueEntries(key);
     const nextFuncList: (() => void)[] = [];
@@ -276,10 +248,7 @@ export default class Asyncmux {
         };
         queue.push(readonlyItem);
       } else if (latestItem.type !== "R") {
-        const {
-          promise,
-          resolve,
-        } = Promise.withResolvers<void>();
+        const { promise, resolve } = Promise.withResolvers<void>();
         readonlyItem = {
           type: "R",
           start: resolve,
@@ -311,23 +280,15 @@ export default class Asyncmux {
       readyPromiseList.push(readyPromise);
     }
 
-    const next = () => nextFuncList.forEach(next => next());
+    const next = () => nextFuncList.forEach((next) => next());
     const readyPromise = Promise.all(readyPromiseList);
 
-    const {
-      resolve: abort,
-      promise: abortPromise,
-    } = Promise.withResolvers();
+    const { resolve: abort, promise: abortPromise } = Promise.withResolvers();
     signal?.addEventListener("abort", abort, { once: true });
 
-    const {
-      resolve: unlock,
-      promise: unlockPromise,
-    } = Promise.withResolvers<void>();
+    const { resolve: unlock, promise: unlockPromise } = Promise.withResolvers<void>();
 
-    readyPromise
-      .then(() => unlockPromise)
-      .finally(next);
+    readyPromise.then(() => unlockPromise).finally(next);
 
     return Promise.race([
       abortPromise.then(() => ({
@@ -337,15 +298,14 @@ export default class Asyncmux {
         signal?.removeEventListener("abort", abort);
         return new AsyncmuxLock(unlock);
       }),
-    ])
-      .then(result => {
-        if ("error" in result) {
-          unlock(); // 未解決の `unlockPromise` を解決します。
-          return Promise.reject(result.error);
-        } else {
-          abort(null); // 未解決の `abortPromise` を解決します。
-          return Promise.resolve(result);
-        }
-      });
+    ]).then((result) => {
+      if ("error" in result) {
+        unlock(); // 未解決の `unlockPromise` を解決します。
+        return Promise.reject(result.error);
+      } else {
+        abort(null); // 未解決の `abortPromise` を解決します。
+        return Promise.resolve(result);
+      }
+    });
   }
 }

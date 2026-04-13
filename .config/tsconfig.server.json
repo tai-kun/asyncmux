@@ -1,13 +1,10 @@
 {
   "extends": ["@tsconfig/node22", "@tsconfig/strictest"],
-  "include": ["./global.d.ts", "../src/**/*"],
+  "include": ["global.d.ts", "../tests/**/*.server.test.ts"],
   "compilerOptions": {
     "types": ["node"],
-    "lib": ["DOM", "ESNext"],
-    "noEmit": false,
-    "outDir": "../dist",
-    "declaration": true,
-    "declarationMap": true,
+    "lib": ["ESNext"],
+    "noEmit": true,
     "target": "es2020",
     "module": "nodenext",
     "moduleResolution": "nodenext",

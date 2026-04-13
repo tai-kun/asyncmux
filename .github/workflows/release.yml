@@ -17,8 +17,8 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
-        contents: write
-        id-token: write
+      contents: write
+      id-token: write
     steps:
       - name: "バージョン解析"
         uses: tai-kun/gha-semver-parser@v1
@@ -26,18 +26,21 @@ jobs:
           version: ${{ github.event.inputs.version }}
         id: semver
 
+      - name: "チェックアウト"
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
       - name: "バージョン確認"
         run: |
-          if npm view "asyncmux@${{ steps.semver.outputs.version }}" version >/dev/null 2>&1; then
-            echo "Error: そのバージョンはすでに存在しています。" >&2
+          PACKAGE_NAME="$(jq -r .name package.json)"
+          if npm view "$PACKAGE_NAME@$_VERSION" version >/dev/null 2>&1; then
+            echo "Error: $PACKAGE_NAME のバージョン $_VERSION はすでに存在しています。" >&2
             exit 1
           fi
-
-      - name: "チェックアウト"
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        env:
+          _VERSION: ${{ steps.semver.outputs.version }}
 
       - name: "Node.js をセットアップ"
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6.1.0
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 24.x
           cache: npm
@@ -54,27 +57,60 @@ jobs:
 
       - name: "バージョンを更新"
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          npm version '${{ steps.semver.outputs.version }}'
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          npm version "$_VERSION" --no-git-tag-version
+        env:
+          _VERSION: ${{ steps.semver.outputs.version }}
 
       - name: "タグ打ち"
+        id: create_tag
         run: |
-          TAG_NAME="v${{ steps.semver.outputs.version }}"
-          echo "タグを作成：$TAG_NAME"
-          git tag -f "$TAG_NAME"
-          git push origin -f "$TAG_NAME"
+          TAG_NAME="v$_VERSION"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          _VERSION: ${{ steps.semver.outputs.version }}
+
+      - name: "Release の作成"
+        run: gh release create "$_TAG_NAME" --generate-notes
+        env:
+          _TAG_NAME: ${{ steps.create_tag.outputs.tag_name }}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: "公開"
         run: npm publish
 
+      - name: "リリース失敗時のクリーンアップ"
+        if: failure()
+        run: |
+          if [ -z "$_TAG_NAME" ]; then
+            echo "タグが作成されていないため、クリーンアップをスキップします。"
+            exit 0
+          fi
+
+          echo "エラーが発生しました。タグ $_TAG_NAME および関連するリリースを削除します。"
+
+          # Release の削除
+          if gh release view "$_TAG_NAME" >/dev/null 2>&1; then
+            gh release delete "$_TAG_NAME" --yes
+          fi
+
+          # リモートタグの削除
+          git push --delete origin "$_TAG_NAME" || echo "リモートタグの削除に失敗しました"
+
+          # ローカルタグの削除
+          git tag -d "$_TAG_NAME" || true
+        env:
+          _TAG_NAME: ${{ steps.create_tag.outputs.tag_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: "npm ログをアップロード"
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: npm-logs-publish
           path: /home/runner/.npm/_logs/*.log
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3

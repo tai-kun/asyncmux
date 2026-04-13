@@ -1,0 +1,34 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "**/.history/**",
+    "**/.Trash/**",
+    "**/dist/**",
+    "**/docs/**",
+    "**/node_modules/**"
+  ],
+  "plugins": [
+    "unicorn",
+    "oxc",
+    "typescript",
+    "import",
+    "react",
+    "jsdoc",
+    "vitest",
+    "promise",
+    "node"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "no-unused-expressions": "off", // logtape で使用します。
+    "no-unused-vars": "warn"
+  },
+  "env": {
+    "builtin": true
+  },
+  "options": {
+    "typeAware": true
+  }
+}

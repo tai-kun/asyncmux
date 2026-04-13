@@ -219,6 +219,8 @@ $RECYCLE.BIN/
 
 .history/
 .Trash/
+.vitepress/
+.vitest-attachments/
 dist/
 cache/
 __screenshots__/

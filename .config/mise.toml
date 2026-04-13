@@ -3,9 +3,11 @@ node = "22"
 
 [tasks.test]
 run = [
-    { task = "test:server" },
-    { task = "test:client" },
-    { task = "test:typecheck" },
+  { task = "test:server" },
+  { task = "test:client" },
+  { task = "test:format" },
+  { task = "test:lint" },
+  { task = "test:typecheck" },
 ]
 
 [tasks."test:server"]
@@ -14,22 +16,30 @@ run = "npx vitest --config ./.config/vitest.server.ts"
 [tasks."test:client"]
 run = "npx vitest --config ./.config/vitest.client.ts"
 
+[tasks."test:format"]
+run = "npx oxfmt --config ./.config/.oxfmtrc.json --check"
+
+[tasks."test:lint"]
+run = "npx oxlint --config ./.config/.oxlintrc.json"
+
 [tasks."test:typecheck"]
-run = "npx tsc --noEmit --project ./.config/tsconfig.test.json"
+run = [
+  "npx tsc --noEmit --project ./.config/tsconfig.base.json",
+  "npx tsc --noEmit --project ./.config/tsconfig.client.json",
+  "npx tsc --noEmit --project ./.config/tsconfig.server.json",
+  "npx tsc --noEmit --project ./.config/tsconfig.config.json",
+]
 
-[tasks."docs:dev"]
-run = "npx vitepress dev website"
+[tasks.fmt]
+run = "npx oxfmt --config ./.config/.oxfmtrc.json"
 
-[tasks."docs:build"]
-run = "npx vitepress build website"
-
-[tasks."docs:preview"]
-run = "npx vitepress preview website"
+[tasks.lint]
+run = "npx oxlint --config ./.config/.oxlintrc.json"
 
 [tasks.update]
 run = [
-    "npx npm-check-updates --target minor -u --cooldown 3",
-    "npm install",
-    "npx playwright install chromium --with-deps",
-    "npm audit",
+  "npx npm-check-updates --target minor -u --cooldown 3",
+  "npm install",
+  "npx playwright install --with-deps",
+  "npm audit",
 ]

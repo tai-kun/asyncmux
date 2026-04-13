@@ -1,5 +1,6 @@
 import { setGlobalConfig } from "valibot";
 import { beforeEach, describe, test } from "vitest";
+
 import { UnreachableError } from "../src/errors.js";
 
 beforeEach(() => {

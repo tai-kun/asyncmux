@@ -5,27 +5,32 @@
   "editor.wordWrapColumn": 100,
   "editor.wordWrap": "wordWrapColumn",
 
-  // dprint
-
-  "dprint.path": "./node_modules/dprint/dprint",
-
   // TypeScript
 
-  "typescript.tsdk": "./node_modules/typescript/lib",
+  "js/ts.tsdk.path": "./node_modules/typescript/lib",
+
+  // Oxfmt
+
+  "oxc.path.node": "/home/taikun/.local/share/mise/installs/node/22/bin/node",
+
+  "oxc.path.oxfmt": "./node_modules/.bin/oxfmt",
+  "oxc.fmt.configPath": "./.config/.oxfmtrc.json",
+
+  "oxc.path.oxlint": "./node_modules/.bin/oxlint",
+  "oxc.configPath": "./.config/.oxlintrc.json",
+  "oxc.path.tsgolint": "./node_modules/.bin/tsgolint",
 
   // ファイル毎の設定
 
-  "[yaml][json][jsonc][javascript][typescript][typescriptreact]": {
-    "editor.indentSize": 2,
-    "editor.insertSpaces": true,
+  "[javascript][typescript][typescriptreact][css][html][json][jsonc][yaml][markdown][toml][sql]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "dprint.dprint"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
 
-  "[toml]": {
-    "editor.indentSize": 4,
-    "editor.insertSpaces": true,
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "dprint.dprint"
+  "[typescript]": {
+    "editor.codeActionsOnSave": {
+      "source.format.oxc": "always",
+      "source.fixAll.oxc": "always"
+    }
   }
 }
