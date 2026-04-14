@@ -50,7 +50,7 @@ jobs:
         run: npm install -g npm@latest
 
       - name: "依存関係をインストール"
-        run: npm ci
+        run: npm i
 
       - name: "ビルド"
         run: npm run build
