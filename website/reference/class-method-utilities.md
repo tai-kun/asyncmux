@@ -36,10 +36,6 @@ function asyncmux<TMethod extends AsyncClassMethod>(method: TMethod, context: un
 
 引数 `context` がステージ 3 のデコレーターの Context オブジェクトではないと判定された場合に投げられます。
 
-`LockEscalationError`
-
-読み取りロック中に、この書き込みロックを獲得しようとした場合に投げられます。
-
 #### 使用例 {#decorator-asyncmux-examples}
 
 以下の例では、処理 B の方が早く ID をコンソールに出力しそうですが、排他制御を行っているため、実際には処理 A が ID をコンソールに出力してから、処理 B が続きます。
@@ -119,28 +115,6 @@ const service = new Service();
 await service.create();
 // read: B
 // read: A
-```
-
-以下の例では、読み取りロック中のクラスメソッド内で、書き込みロックを要求するクラスメソッドを実行します。
-
-```ts
-import { asyncmux } from "asyncmux";
-
-class Service {
-  @asyncmux
-  async create() {
-    // ...
-  }
-
-  @asyncmux.readonly
-  async read() {
-    await this.create();
-  }
-}
-
-const service = new Service();
-
-await service.read(); // LockEscalationError
 ```
 
 ### `@asyncmux.readonly` {#decorator-asyncmux-readonly}
@@ -240,9 +214,7 @@ await service.list();
 ```ts
 function asyncmux(
   this_: object,
-  options?: {
-    signal?: AbortSignal;
-  },
+  signal?: AbortSignal,
 ): Promise<
   Disposable & {
     unlock(): void;
@@ -281,7 +253,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async create(data: string, signal?: AbortSignal) {
-    using _ = asyncmux(this, { signal });
+    using _ = asyncmux(this, signal);
     // ...
   }
 }
@@ -296,7 +268,7 @@ class Service {
   async create(data: string, signal?: AbortSignal) {
     let mux;
     if (__STRICT_MODE__) {
-      mux = asyncmux(this, { signal });
+      mux = asyncmux(this, signal);
     }
 
     try {
@@ -317,9 +289,7 @@ class Service {
 ```ts
 function asyncmux.readonly(
   this_: object,
-  options?: {
-    signal?: AbortSignal;
-  },
+  signal?: AbortSignal,
 ): Promise<Disposable & {
   unlock(): void;
 }>;
@@ -356,7 +326,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async read(data: string, signal?: AbortSignal) {
-    using _ = asyncmux.readonly(this, { signal });
+    using _ = asyncmux.readonly(this, signal);
     // ...
   }
 }
@@ -371,7 +341,7 @@ class Service {
   async read(data: string, signal?: AbortSignal) {
     let mux;
     if (__STRICT_MODE__) {
-      mux = asyncmux.readonly(this, { signal });
+      mux = asyncmux.readonly(this, signal);
     }
 
     try {

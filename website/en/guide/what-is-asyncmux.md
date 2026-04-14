@@ -7,8 +7,6 @@
 - **Write Lock**: Prevents concurrent execution of specific processes, ensuring they run sequentially.
 - **Read Lock**: Allows multiple read operations to execute in parallel.
 - **Read/Write Control**: Prevents reads while a write is in progress, and prevents writes while reads are in progress.
-- **No Lock Escalation**: Attempting to acquire a write lock while holding a read lock will trigger a `LockEscalationError` to prevent deadlocks.
-- **Reentrancy**: Requesting the same lock from within a context that already holds it will not cause a deadlock.
 - **Abortable**: Supports `AbortSignal` to cancel a pending operation waiting for a lock.
 - **Fine-grained Locking**: Allows acquiring locks on a per-resource basis by specifying key strings.
 
@@ -58,7 +56,7 @@ For manual control, the library adopts the `using` statement, which **structural
 ```ts
 class Runner {
   async write(path: string, data: string, signal: AbortSignal): Promise<void> {
-    using _ = await asyncmux(this, { signal });
+    using _ = await asyncmux(this, signal);
   }
 }
 ```
@@ -68,7 +66,7 @@ Alternatively:
 ```ts
 class Runner {
   async write(path: string, data: string, signal: AbortSignal): Promise<void> {
-    const mux = await asyncmux(this, { signal });
+    const mux = await asyncmux(this, signal);
     try {
       // ...
     } finally {
@@ -83,7 +81,9 @@ class Runner {
 By creating an API instance with `asyncmux.create()`, you can acquire locks for specific resources using key strings. Omitting the key string allows you to acquire a global lock across all resources.
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 using _ = await mux.lock(); // Write lock for all resources
 
@@ -92,15 +92,3 @@ using _ = await mux.lock("posts"); // Write lock for "posts" resource
 using _ = await mux.lock("profile"); // Write lock for "profile" resource
 using _ = await mux.rLock("profile"); // Read lock for "profile" resource
 ```
-
-### Avoiding Deadlocks via Reentrancy {#avoiding-deadlock-with-reentrancy}
-
-As demonstrated by the "executing serial within serial" test cases, locks can be called recursively within the same instance.
-
-> **Example:** `Method A (Lock)` can call `Method B (Lock)` internally without hanging.
-
-This allows you to safely compose new methods from existing locked methods without worrying about overlapping lock requests.
-
-### Early Detection of Deadlocks {#early-detection-of-deadlocks}
-
-The "error on write-lock attempt during read-lock" rule is a powerful safeguard. If a process waits for a write lock while holding a read lock, it creates a deadlock with other concurrent readers. `asyncmux` immediately notifies you of this via `LockEscalationError`, preventing those hard-to-debug "random freeze" scenarios at runtime.

@@ -122,7 +122,7 @@ You can pass a `signal` option to `asyncmux(this)` or `asyncmux.readonly(this)`.
 class Runner {
   async runWithMutex(ms: number, value: string, signal?: AbortSignal) {
     // Throws an error if the signal is aborted while waiting for the lock
-    using _ = await asyncmux(this, { signal });
+    using _ = await asyncmux(this, signal);
 
     await sleep(ms);
     console.log(value);
@@ -162,26 +162,6 @@ Calling `lock()` without a key creates a **global lock that excludes all other l
 const mux = asyncmux.create();
 
 using _ = await mux.lock(); // Blocks all processing for key1, key2, etc.
-```
-
-## Constraints and Error Handling {#global-lock}
-
-### Preventing Lock Escalation {#limitations-and-errors}
-
-To avoid deadlocks, attempting to acquire a **write lock while already holding a read lock** will result in an error.
-
-```ts
-class Runner {
-  @asyncmux.readonly
-  async read() {
-    await this.write(); // Throws LockEscalationError
-  }
-
-  @asyncmux
-  async write() {
-    // ...
-  }
-}
 ```
 
 ## Behavior Overview {#behavior-visual}

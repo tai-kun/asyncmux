@@ -36,10 +36,6 @@ The context object for Stage 3 decorators.
 
 Thrown if the `context` argument is determined not to be a Stage 3 decorator context object.
 
-`LockEscalationError`
-
-Thrown when attempting to acquire this write lock while a read lock is already held.
-
 #### Examples {#decorator-asyncmux-examples}
 
 In the following example, Task B would normally output its ID to the console faster than Task A. however, because concurrency is controlled, Task A outputs its ID first, followed by Task B.
@@ -119,28 +115,6 @@ const service = new Service();
 await service.create();
 // read: B
 // read: A
-```
-
-The following example demonstrates a `LockEscalationError` when a class method requiring a write lock is called from within a method already holding a read lock.
-
-```ts
-import { asyncmux } from "asyncmux";
-
-class Service {
-  @asyncmux
-  async create() {
-    // ...
-  }
-
-  @asyncmux.readonly
-  async read() {
-    await this.create();
-  }
-}
-
-const service = new Service();
-
-await service.read(); // LockEscalationError
 ```
 
 ### `@asyncmux.readonly` {#decorator-asyncmux-readonly}
@@ -242,9 +216,7 @@ The `asyncmux` function acquires a write lock within a class method.
 ```ts
 function asyncmux(
   this_: object,
-  options?: {
-    signal?: AbortSignal;
-  },
+  signal?: AbortSignal,
 ): Promise<
   Disposable & {
     unlock(): void;
@@ -283,7 +255,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async create(data: string, signal?: AbortSignal) {
-    using _ = asyncmux(this, { signal });
+    using _ = asyncmux(this, signal);
     // ...
   }
 }
@@ -298,7 +270,7 @@ class Service {
   async create(data: string, signal?: AbortSignal) {
     let mux;
     if (__STRICT_MODE__) {
-      mux = asyncmux(this, { signal });
+      mux = asyncmux(this, signal);
     }
 
     try {
@@ -319,9 +291,7 @@ The `asyncmux.readonly` function acquires a read lock within a class method.
 ```ts
 function asyncmux.readonly(
   this_: object,
-  options?: {
-    signal?: AbortSignal;
-  },
+  signal?: AbortSignal,
 ): Promise<Disposable & {
   unlock(): void;
 }>;
@@ -358,7 +328,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async read(data: string, signal?: AbortSignal) {
-    using _ = asyncmux.readonly(this, { signal });
+    using _ = asyncmux.readonly(this, signal);
     // ...
   }
 }
@@ -373,7 +343,7 @@ class Service {
   async read(data: string, signal?: AbortSignal) {
     let mux;
     if (__STRICT_MODE__) {
-      mux = asyncmux.readonly(this, { signal });
+      mux = asyncmux.readonly(this, signal);
     }
 
     try {

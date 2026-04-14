@@ -36,13 +36,10 @@ An error thrown when the runtime environment does not support Stage 3 decorators
 
 You must use a runtime environment that supports Stage 3 decorators or provide a polyfill/implementation that simulates them.
 
-## `LockEscalationError` {#lock-escalation-error}
+## LockReleasedError {#lock-released-error}
 
-An error thrown when an attempt is made to perform lock escalation (upgrading from a `read` lock to a `write` lock).
+This error is thrown when an attempt is made to release a lock that has already been released.
 
-### Troubleshooting {#lock-escalation-troubleshooting}
+### Troubleshooting {#lock-released-troubleshooting}
 
-This is a design constraint intended to prevent deadlocks. Please consider the following:
-
-- Review and refactor your implementation.
-- Decouple sections that can be executed in parallel.
+Ensure that the code does not attempt to release a lock that has already been released.

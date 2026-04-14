@@ -7,8 +7,6 @@
 - **書き込みロック**: 特定の処理の同時実行を禁止し、1 つずつ順番に実行します。
 - **読み取りロック**: 読み取り同士は並列に実行できます。
 - **Read / Write 制御**: 書き込み中は読み取り不可、読み取り中は書き込み不可となります。
-- **ロックの昇格禁止**: 読み取りロック中に書き込みロックを取得しようとすると `LockEscalationError` が発生します。
-- **再入可能**: すでにロックを取得しているコンテキスト内から、さらに同じロックを要求してもデッドロックしません。
 - **中止可能**: `AbortSignal` によって排他制御による処理の実行待機を中止できます。
 - **きめ細やかなロック**: キー文字列で指定することで、リソース単位のロックを獲得できます。
 
@@ -58,7 +56,7 @@ class Runner {
 ```ts
 class Runner {
   async write(path: string, data: string, signal: AbortSignal): Promise<void> {
-    using _ = await asyncmux(this, { signal });
+    using _ = await asyncmux(this, signal);
   }
 }
 ```
@@ -68,7 +66,7 @@ class Runner {
 ```ts
 class Runner {
   async write(path: string, data: string, signal: AbortSignal): Promise<void> {
-    const mux = await asyncmux(this, { signal });
+    const mux = await asyncmux(this, signal);
     try {
       // ...
     } finally {
@@ -83,7 +81,9 @@ class Runner {
 `asyncmux.create()` で API インスタンスを作成することで、キー文字列によるリソース単位のロックを獲得することができます。キー文字列を省略することで、全リソースに対するロックを獲得することもできます。
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 using _ = await mux.lock(); // 全リソースに対する書き込みロック
 
@@ -92,15 +92,3 @@ using _ = await mux.lock("posts"); // リソース "posts" に対する書き込
 using _ = await mux.lock("profile"); // リソース "profile" に対する書き込みロック
 using _ = await mux.rLock("profile"); // リソース "profile" に対する読み取りロック
 ```
-
-### 再入可能性によるデッドロックの回避 {#avoiding-deadlock-with-reentrancy}
-
-テストコードの「直列の中で直列を実行可能」という項目にある通り、同じインスタンス内であれば再帰的にロックを呼び出せます。
-
-> **例:** `Method A (Lock)` が内部で `Method B (Lock)` を呼んでも止まらない。
-
-これにより、既存のメソッドを組み合わせて新しいメソッドを作る際、ロックの重複を気にせず安全に合成が可能です。
-
-### デッドロックの早期検知 {#early-detection-of-deadlocks}
-
-「並行の中で直列を実行しようとするとエラー」になる仕様は、非常に強力です。読み取りロック中に書き込みロックを待機してしまうと、他の読み取り層と互いに待ち合うデッドロックに陥ります。`asyncmux` はこれを `LockEscalationError` として即座に通知するため、実行時に「なぜかフリーズする」というデバッグ困難な状況を防げます。

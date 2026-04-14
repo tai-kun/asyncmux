@@ -122,7 +122,7 @@ class Runner {
 class Runner {
   async runWithMutex(ms: number, value: string, signal?: AbortSignal) {
     // ロック中に `signal` が中断されればエラーを投げる
-    using _ = await asyncmux(this, { signal });
+    using _ = await asyncmux(this, signal);
 
     await sleep(ms);
     console.log(value);
@@ -162,26 +162,6 @@ await Promise.all([
 const mux = asyncmux.create();
 
 using _ = await mux.lock(); // すべての key1, key2 等の処理をブロックする
-```
-
-## 制約とエラーハンドリング {#global-lock}
-
-### ロックの昇格の禁止 {#limitations-and-errors}
-
-デッドロックを回避するため、**読み取りロックを保持した状態で書き込みロックを取得しようとする**とエラーになります。
-
-```ts
-class Runner {
-  @asyncmux.readonly
-  async read() {
-    await this.write(); // ここで LockEscalationError が発生
-  }
-
-  @asyncmux
-  async write() {
-    // ...
-  }
-}
 ```
 
 ## 動作イメージ {#behavior-visual}

@@ -21,10 +21,6 @@ features:
     details: Prevents concurrent execution of specific tasks, ensuring they run sequentially. Mutually exclusive with read locks.
   - title: Read Locks
     details: Allows multiple read operations to run in parallel. Mutually exclusive with write locks.
-  - title: No Lock Escalation
-    details: Prevents deadlocks by throwing a LockEscalationError if a write lock is requested while holding a read lock.
-  - title: Reentrant
-    details: Safely request the same lock from within an already locked context without causing a deadlock.
   - title: Abortable
     details: Supports AbortSignal to cancel pending tasks waiting for a lock.
 ---
