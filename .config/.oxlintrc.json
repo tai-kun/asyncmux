@@ -23,7 +23,8 @@
   },
   "rules": {
     "no-unused-expressions": "off", // logtape で使用します。
-    "no-unused-vars": "warn"
+    "no-unused-vars": "warn",
+    "vitest/no-focused-tests": "off"
   },
   "env": {
     "builtin": true

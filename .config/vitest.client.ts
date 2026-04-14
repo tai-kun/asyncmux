@@ -28,5 +28,6 @@ export default defineConfig({
         // { browser: "webkit" },
       ],
     },
+    setupFiles: [".config/_debugging.ts"],
   },
 });

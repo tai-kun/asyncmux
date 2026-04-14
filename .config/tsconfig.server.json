@@ -1,6 +1,6 @@
 {
   "extends": ["@tsconfig/node22", "@tsconfig/strictest"],
-  "include": ["global.d.ts", "../tests/**/*.server.test.ts"],
+  "include": ["./global.d.ts", "../tests/**/*.server.test.ts"],
   "compilerOptions": {
     "types": ["node"],
     "lib": ["ESNext"],

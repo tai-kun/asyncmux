@@ -1,6 +1,6 @@
 import { beforeEach, describe, test } from "vitest";
 
-import Asyncmux from "../src/asyncmux-general.js";
+import Asyncmux from "../src/asyncmux.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 let log: string[];

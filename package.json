@@ -25,6 +25,7 @@
     "build": "tsc --project ./.config/tsconfig.build.json"
   },
   "dependencies": {
+    "@logtape/logtape": "^2.0.5",
     "@tai-kun/is-promise-like": "^0.0.5",
     "i18n-error-base": "^0.0.3",
     "try-capture-stack-trace": "^0.0.3"

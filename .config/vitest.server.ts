@@ -16,5 +16,6 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     exclude: ["tests/**/*.client.test.ts"],
+    setupFiles: [".config/_debugging.ts"],
   },
 });

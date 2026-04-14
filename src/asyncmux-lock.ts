@@ -1,37 +1,42 @@
+import { LockReleasedError } from "./errors.js";
+
 // 獲得したロックを解除するためのオブジェクトです。
 // `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
-export default class AsyncmuxLock implements Disposable {
+export default class AsyncmuxLock {
   /**
-   * ロックしている `Promise` オブジェクトを解除する関数です。
+   * ロックを解放するための関数を保持します。すでに解放されている場合は `null` になります。
    */
-  #resolve: () => void;
+  #releaseFn: (() => void) | null;
 
   /**
-   * `unlock` メソッドが呼び出されたかどうがのフラグです。
+   * @internal インスタンスを初期化します。
+   * @param releaseFn ロックを解放する際に実行されるコールバック関数です。
    */
-  #unlockCalled: boolean;
-
-  /**
-   * `AsyncmuxLock` クラスの新しいインスタンスを初期化します。
-   *
-   * @internal
-   * @param resolve ロックしている `Promise` オブジェクトを解除する関数です。
-   */
-  public constructor(resolve: () => void) {
-    this.#resolve = resolve;
-    this.#unlockCalled = false;
+  public constructor(releaseFn: () => void) {
+    this.#releaseFn = releaseFn;
   }
 
   public unlock(): void {
-    this.#unlockCalled = true;
-    this.#resolve();
+    // すでに解放関数が null の場合は、二重解放とみなしてエラーを投げます。
+    if (!this.#releaseFn) {
+      throw new LockReleasedError();
+    }
+
+    try {
+      // 登録された解放処理（内部的な状態更新）を実行します。
+      this.#releaseFn();
+    } finally {
+      // 再入を防ぐために確実に null を代入します。
+      this.#releaseFn = null;
+    }
   }
 
   public [Symbol.dispose](): void {
-    if (this.#unlockCalled) {
+    // すでに解放済みの場合は何もしません。
+    if (!this.#releaseFn) {
       return;
     }
 
-    this.#resolve();
+    this.unlock();
   }
 }

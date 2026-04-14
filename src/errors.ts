@@ -1,6 +1,4 @@
-import { type ErrorMeta, I18nErrorBase, initErrorMessage, setErrorMessage } from "i18n-error-base";
-
-export { setErrorMessage } from "i18n-error-base";
+import { type ErrorMeta, I18nErrorBase, setErrorMessage } from "i18n-error-base";
 
 // -------------------------------------------------------------------------------------------------
 //
@@ -8,23 +6,7 @@ export { setErrorMessage } from "i18n-error-base";
 //
 // -------------------------------------------------------------------------------------------------
 
-/**
- * あらゆる値を文字列に整形します。
- *
- * @param value 文字列に整形する値です。
- * @returns 文字列に整形された値です。
- */
-function formatErrorValue(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
+export { setErrorMessage };
 
 // -------------------------------------------------------------------------------------------------
 //
@@ -36,52 +18,15 @@ function formatErrorValue(value: unknown): string {
  * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#error-base)
  */
 export class ErrorBase<
-  TMeta extends ErrorMeta | undefined = undefined,
+  TMeta extends ErrorMeta | undefined = ErrorMeta | undefined,
 > extends I18nErrorBase<TMeta> {}
-
-// -------------------------------------------------------------------------------------------------
-
-/**
- * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#unreachable-error)
- */
-export class UnreachableError extends ErrorBase<{
-  value?: unknown;
-}> {
-  static {
-    this.prototype.name = "AsyncmuxUnreachableError";
-  }
-
-  /**
-   * `AsyncmuxUnreachableError` クラスの新しいインスタンスを初期化します。
-   *
-   * @param args 到達しないはずの値があれば指定します。
-   * @param options エラーのオプションです。
-   */
-  public constructor(args: [never?], options?: ErrorOptions | undefined) {
-    super(options, args.length > 0 ? { value: args[0] } : {});
-    initErrorMessage(this, ({ meta }) =>
-      "value" in meta
-        ? "Encountered impossible value: " + formatErrorValue(meta.value)
-        : "Unreachable code reached",
-    );
-  }
-}
-
-/*#__PURE__*/ setErrorMessage(
-  UnreachableError,
-  ({ meta }) =>
-    "value" in meta
-      ? "不可能な値に遭遇しました: " + formatErrorValue(meta.value)
-      : "到達できないコードに到達しました",
-  "ja",
-);
 
 // -------------------------------------------------------------------------------------------------
 
 /**
  * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#decorator-support-error)
  */
-export class DecoratorSupportError extends ErrorBase {
+export class DecoratorSupportError extends ErrorBase<undefined> {
   static {
     this.prototype.name = "AsyncmuxDecoratorSupportError";
   }
@@ -91,45 +36,28 @@ export class DecoratorSupportError extends ErrorBase {
    *
    * @param options エラーのオプションです。
    */
-  public constructor(options?: ErrorOptions | undefined) {
-    super(options, undefined);
-    initErrorMessage(this, () => "Requires Stage 3 decorator support");
+  public constructor(options?: ErrorOptions) {
+    super("Requires Stage 3 decorator support", options);
   }
 }
 
-/*#__PURE__*/ setErrorMessage(
-  DecoratorSupportError,
-  () => "ステージ 3 のデコレーターのサポートが必要です",
-  "ja",
-);
+setErrorMessage(DecoratorSupportError, "ステージ 3 のデコレーターのサポートが必要です", "ja");
 
 // -------------------------------------------------------------------------------------------------
 
-/**
- * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#lock-escalation-error)
- */
-export class LockEscalationError extends ErrorBase {
+export class LockReleasedError extends ErrorBase<undefined> {
   static {
-    this.prototype.name = "AsyncmuxLockEscalationError";
+    this.prototype.name = "AsyncmuxLockReleasedError";
   }
 
   /**
-   * `AsyncmuxLockEscalationError` クラスの新しいインスタンスを初期化します。
+   * `LockReleasedError` クラスの新しいインスタンスを初期化します。
    *
    * @param options エラーのオプションです。
    */
-  public constructor(options?: ErrorOptions | undefined) {
-    super(options, undefined);
-    initErrorMessage(
-      this,
-      () => "Lock Escalation is not allowed: Cannot acquire a write lock while holding a read lock",
-    );
+  public constructor(options?: ErrorOptions) {
+    super("Lock id already released", options);
   }
 }
 
-/*#__PURE__*/ setErrorMessage(
-  LockEscalationError,
-  () =>
-    "ロックの昇格は許可されていません: 読み取りロックを保持している間は書き込みロックを取得できません",
-  "ja",
-);
+setErrorMessage(LockReleasedError, "ロックはすでに解放済みです。", "ja");
