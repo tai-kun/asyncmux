@@ -1,7 +1,7 @@
 import { LockReleasedError } from "./errors.js";
 
 // 獲得したロックを解除するためのオブジェクトです。
-// `using` 構文を使うか、このオブジェクトの `unlock` メソッドを呼び出すことで、獲得したロックが解除されます。
+// `using` 構文を使うか、このオブジェクトの `release` メソッドを呼び出すことで、獲得したロックが解除されます。
 export default class AsyncmuxLock {
   /**
    * ロックを解放するための関数を保持します。すでに解放されている場合は `null` になります。
@@ -16,11 +16,11 @@ export default class AsyncmuxLock {
     this.#releaseFn = releaseFn;
   }
 
-  public get locked(): boolean {
+  public get released(): boolean {
     return !!this.#releaseFn;
   }
 
-  public unlock(): void {
+  public release(): void {
     // すでに解放関数が null の場合は、二重解放とみなしてエラーを投げます。
     if (!this.#releaseFn) {
       throw new LockReleasedError();
@@ -41,6 +41,6 @@ export default class AsyncmuxLock {
       return;
     }
 
-    this.unlock();
+    this.release();
   }
 }

@@ -13,10 +13,11 @@ describe("基本的なロック取得と解放", () => {
 
     // Assert
     expect(lock).toBeDefined();
-    expect(typeof lock.unlock).toBe("function");
+    // oxlint-disable-next-line typescript/unbound-method
+    expect(lock.release).toBeTypeOf("function");
 
     // Cleanup
-    lock.unlock();
+    lock.release();
   });
 
   test("単一の読み取りロックを要求したとき、取得に成功する", async ({ expect }) => {
@@ -30,7 +31,7 @@ describe("基本的なロック取得と解放", () => {
     expect(lock).toBeDefined();
 
     // Cleanup
-    lock.unlock();
+    lock.release();
   });
 });
 
@@ -52,10 +53,10 @@ describe("並行実行制御", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(isReadResolved).toBe(false);
 
-    writeLock.unlock();
+    writeLock.release();
     const readLock = await readLockPromise;
     expect(isReadResolved).toBe(true);
-    readLock.unlock();
+    readLock.release();
   });
 
   test("読み取りロック中に別の読み取り要求をしたとき、即座に共有して取得できる", async ({
@@ -73,8 +74,8 @@ describe("並行実行制御", () => {
     await expect(readLock2Promise).resolves.toBeDefined();
 
     const readLock2 = await readLock2Promise;
-    readLock1.unlock();
-    readLock2.unlock();
+    readLock1.release();
+    readLock2.release();
   });
 
   test("読み取りロック中に書き込み要求をしたとき、すべての読み取りが解放されるまで待機する", async ({
@@ -95,10 +96,10 @@ describe("並行実行制御", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(isWriteResolved).toBe(false);
 
-    readLock.unlock();
+    readLock.release();
     const writeLock = await writeLockPromise;
     expect(isWriteResolved).toBe(true);
-    writeLock.unlock();
+    writeLock.release();
   });
 
   test("複数のリクエストがあるとき、先着順（FIFO）で実行される", async ({ expect }) => {
@@ -111,14 +112,14 @@ describe("並行実行制御", () => {
     // Act
     const p1 = asyncmux.readonly(target).then((l) => {
       executionOrder.push("R1");
-      l.unlock();
+      l.release();
     });
     const p2 = asyncmux(target).then((l) => {
       executionOrder.push("W2");
-      l.unlock();
+      l.release();
     });
 
-    lock1.unlock();
+    lock1.release();
     await Promise.all([p1, p2]);
 
     // Assert
@@ -153,10 +154,10 @@ describe("中断処理", () => {
     await expect(pendingLockPromise).rejects.toBe("Timeout");
 
     // 後続のロックが正しく取得できる（キューが壊れていない）ことを確認する。
-    initialLock.unlock();
+    initialLock.release();
     const nextLock = await asyncmux(target);
     expect(nextLock).toBeDefined();
-    nextLock.unlock();
+    nextLock.release();
   });
 });
 
@@ -235,7 +236,7 @@ describe("境界値・異常系", () => {
     // ロックが解放されていれば、次の呼び出しが即座に成功する。
     const nextLock = await asyncmux(service);
     expect(nextLock).toBeDefined();
-    nextLock.unlock();
+    nextLock.release();
   });
 
   test("異なるオブジェクトへのロック要求は、互いに干渉しない", async ({ expect }) => {
@@ -250,8 +251,8 @@ describe("境界値・異常系", () => {
     await expect(lockBPromise).resolves.toBeDefined();
 
     const lockB = await lockBPromise;
-    lockA.unlock();
-    lockB.unlock();
+    lockA.release();
+    lockB.release();
   });
 
   test("高負荷状態で多数のリクエストを発行したとき、整合性が保たれる", async ({ expect }) => {
@@ -265,7 +266,7 @@ describe("境界値・異常系", () => {
       return (async () => {
         const lock = await asyncmux(target);
         results.push(i);
-        lock.unlock();
+        lock.release();
       })();
     });
 

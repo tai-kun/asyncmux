@@ -20,23 +20,23 @@
 class Asyncmux {
   lock(key?: string): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
   lock(options: { key?: string; signal?: AbortSignal }): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
 
   rLock(key?: string): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
   rLock(options: { key?: string; signal?: AbortSignal }): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
 }
@@ -63,14 +63,14 @@ const mux = new Asyncmux();
 ```ts
 function lock(): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
 
 #### 返値 {#lock-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#lock-example}
 
@@ -96,7 +96,7 @@ const lock = await mux.lock();
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -109,7 +109,7 @@ try {
 ```ts
 function lock(key: string): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -124,7 +124,7 @@ function lock(key: string): Promise<
 
 #### 返値 {#lock-key-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#lock-key-example}
 
@@ -150,7 +150,7 @@ const lock = await mux.lock("resource(1)");
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -163,7 +163,7 @@ try {
 ```ts
 function lock(options: { key?: string; signal?: AbortSignal }): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -184,7 +184,7 @@ function lock(options: { key?: string; signal?: AbortSignal }): Promise<
 
 #### 返値 {#lock-options-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#lock-options-example}
 
@@ -212,7 +212,7 @@ const lock = await mux.lock({ signal: ac.signal });
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -225,14 +225,14 @@ try {
 ```ts
 function lock(): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
 
 #### 返値 {#rlock-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#rlock-example}
 
@@ -258,7 +258,7 @@ const lock = await mux.rLock();
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -271,7 +271,7 @@ try {
 ```ts
 function lock(key: string): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -286,7 +286,7 @@ function lock(key: string): Promise<
 
 #### 返値 {#rlock-key-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#rlock-key-example}
 
@@ -312,7 +312,7 @@ const lock = await mux.rLock("resource(1)");
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -325,7 +325,7 @@ try {
 ```ts
 function lock(options: { key?: string; signal?: AbortSignal }): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -346,7 +346,7 @@ function lock(options: { key?: string; signal?: AbortSignal }): Promise<
 
 #### 返値 {#rlock-options-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 使用例 {#rlock-options-example}
 
@@ -374,6 +374,6 @@ const lock = await mux.rLock({ signal: ac.signal });
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```

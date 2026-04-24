@@ -20,23 +20,23 @@ The `Asyncmux` class creates a lock object used to acquire read/write locks. The
 class Asyncmux {
   lock(key?: string): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
   lock(options: { key?: string; signal?: AbortSignal }): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
 
   rLock(key?: string): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
   rLock(options: { key?: string; signal?: AbortSignal }): Promise<
     Disposable & {
-      unlock(): void;
+      release(): void;
     }
   >;
 }
@@ -65,14 +65,14 @@ The `mux.lock()` method acquires a write lock for all resources (global lock).
 ```ts
 function lock(): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
 
 #### Return Value {#lock-return-value}
 
-A `Promise` that resolves to an unlocker object. To release the lock, use the `using` statement or call the `.unlock()` method on this object. Note that `.unlock()` cannot be called again after the lock has been released.
+A `Promise` that resolves to an unlocker object. To release the lock, use the `using` statement or call the `.release()` method on this object. Note that `.release()` cannot be called again after the lock has been released.
 
 #### Example {#lock-example}
 
@@ -98,7 +98,7 @@ const lock = await mux.lock();
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -113,7 +113,7 @@ The `mux.lock(key)` method acquires a write lock for a specific resource.
 ```ts
 function lock(key: string): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -127,7 +127,7 @@ function lock(key: string): Promise<
 
 #### Return Value {#lock-key-return-value}
 
-A `Promise` that resolves to an unlocker object. Release the lock using the `using` statement or by calling `.unlock()`.
+A `Promise` that resolves to an unlocker object. Release the lock using the `using` statement or by calling `.release()`.
 
 #### Example {#lock-key-example}
 
@@ -152,7 +152,7 @@ The `mux.lock(options)` method acquires a write lock for either a specific resou
 ```ts
 function lock(options: { key?: string; signal?: AbortSignal }): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -197,7 +197,7 @@ The `mux.rLock()` method acquires a read lock for all resources.
 ```ts
 function rLock(): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -229,7 +229,7 @@ The `mux.rLock(key)` method acquires a read lock for a specific resource.
 ```ts
 function rLock(key: string): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -251,7 +251,7 @@ const lock = await mux.rLock("resource(1)");
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```
 
@@ -266,7 +266,7 @@ The `mux.rLock(options)` method acquires a read lock for either a specific resou
 ```ts
 function rLock(options: { key?: string; signal?: AbortSignal }): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -295,6 +295,6 @@ const lock = await mux.rLock({ signal: ac.signal });
 try {
   // ...
 } finally {
-  lock.unlock();
+  lock.release();
 }
 ```

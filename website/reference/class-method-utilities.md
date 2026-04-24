@@ -217,7 +217,7 @@ function asyncmux(
   signal?: AbortSignal,
 ): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -238,7 +238,7 @@ function asyncmux(
 
 #### 返値 {#functional-asyncmux-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 例外 {#functional-asyncmux-exceptions}
 
@@ -274,7 +274,7 @@ class Service {
     try {
       // ...
     } finally {
-      mux?.unlock();
+      mux?.release();
     }
   }
 }
@@ -291,7 +291,7 @@ function asyncmux.readonly(
   this_: object,
   signal?: AbortSignal,
 ): Promise<Disposable & {
-  unlock(): void;
+  release(): void;
 }>;
 ```
 
@@ -311,7 +311,7 @@ function asyncmux.readonly(
 
 #### 返値 {#functional-asyncmux-readonly-return-value}
 
-アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.unlock()` メソッドを呼び出します。アンロックしたあと、`.unlock()` メソッドを呼び出すことはできません。
+アンロックするためのオブジェクトで解決される `Promise` オブジェクトです。アンロックするためには、`using` 構文を使うか、このオブジェクトの `.release()` メソッドを呼び出します。アンロックしたあと、`.release()` メソッドを呼び出すことはできません。
 
 #### 例外 {#functional-asyncmux-readonly-exceptions}
 
@@ -347,7 +347,7 @@ class Service {
     try {
       // ...
     } finally {
-      mux?.unlock();
+      mux?.release();
     }
   }
 }

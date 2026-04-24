@@ -108,7 +108,7 @@ class Runner {
       await sleep(ms);
       console.log(value);
     } finally {
-      mux.unlock();
+      mux.release();
     }
   }
 }

@@ -70,7 +70,7 @@ class Runner {
     try {
       // ...
     } finally {
-      mux.unlock();
+      mux.release();
     }
   }
 }

@@ -219,7 +219,7 @@ function asyncmux(
   signal?: AbortSignal,
 ): Promise<
   Disposable & {
-    unlock(): void;
+    release(): void;
   }
 >;
 ```
@@ -240,7 +240,7 @@ An optional signal to abort the lock acquisition.
 
 #### Return Value {#functional-asyncmux-return-value}
 
-A `Promise` that resolves to an object used to release the lock. You can release the lock either by using the `using` statement or by calling the `.unlock()` method on this object. Note that `.unlock()` cannot be called more than once.
+A `Promise` that resolves to an object used to release the lock. You can release the lock either by using the `using` statement or by calling the `.release()` method on this object. Note that `.release()` cannot be called more than once.
 
 #### Exceptions {#functional-asyncmux-exceptions}
 
@@ -276,7 +276,7 @@ class Service {
     try {
       // ...
     } finally {
-      mux?.unlock();
+      mux?.release();
     }
   }
 }
@@ -293,7 +293,7 @@ function asyncmux.readonly(
   this_: object,
   signal?: AbortSignal,
 ): Promise<Disposable & {
-  unlock(): void;
+  release(): void;
 }>;
 ```
 
@@ -313,7 +313,7 @@ An optional signal to abort the lock acquisition.
 
 #### Return Value {#functional-asyncmux-readonly-return-value}
 
-A `Promise` that resolves to an object used to release the lock. You can release the lock either by using the `using` statement or by calling the `.unlock()` method. Once released, the `.unlock()` method cannot be called again.
+A `Promise` that resolves to an object used to release the lock. You can release the lock either by using the `using` statement or by calling the `.release()` method. Once released, the `.release()` method cannot be called again.
 
 #### Exceptions {#functional-asyncmux-readonly-exceptions}
 
@@ -349,7 +349,7 @@ class Service {
     try {
       // ...
     } finally {
-      mux?.unlock();
+      mux?.release();
     }
   }
 }

@@ -308,7 +308,7 @@ function wrapClassMethod(
         return returns;
       } finally {
         // メソッドの実行が完了してからロックを開放します。
-        lock.unlock();
+        lock.release();
       }
     })(requestLock(type, this));
   };
