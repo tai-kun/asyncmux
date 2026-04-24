@@ -9,28 +9,23 @@
 
   "js/ts.tsdk.path": "./node_modules/typescript/lib",
 
-  // Oxfmt
+  // Oxc
 
   "oxc.path.node": "/home/taikun/.local/share/mise/installs/node/22/bin/node",
 
   "oxc.path.oxfmt": "./node_modules/.bin/oxfmt",
-  "oxc.fmt.configPath": "./.config/.oxfmtrc.json",
-
   "oxc.path.oxlint": "./node_modules/.bin/oxlint",
-  "oxc.configPath": "./.config/.oxlintrc.json",
   "oxc.path.tsgolint": "./node_modules/.bin/tsgolint",
 
-  // ファイル毎の設定
+  "oxc.configPath": "./.config/.oxlintrc.json",
+  "oxc.fmt.configPath": "./.config/.oxfmtrc.json",
 
   "[javascript][typescript][typescriptreact][css][html][json][jsonc][yaml][markdown][toml][sql]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  },
-
-  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": false,
     "editor.codeActionsOnSave": {
-      "source.format.oxc": "always",
-      "source.fixAll.oxc": "always"
+      "source.fixAll.oxc": "always",
+      "source.format.oxc": "always"
     }
   }
 }
