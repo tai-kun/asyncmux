@@ -16,6 +16,10 @@ export default class AsyncmuxLock {
     this.#releaseFn = releaseFn;
   }
 
+  public get locked(): boolean {
+    return !!this.#releaseFn;
+  }
+
   public unlock(): void {
     // すでに解放関数が null の場合は、二重解放とみなしてエラーを投げます。
     if (!this.#releaseFn) {
@@ -26,7 +30,7 @@ export default class AsyncmuxLock {
       // 登録された解放処理（内部的な状態更新）を実行します。
       this.#releaseFn();
     } finally {
-      // 再入を防ぐために確実に null を代入します。
+      // 再実行を防ぐために確実に null を代入します。
       this.#releaseFn = null;
     }
   }
