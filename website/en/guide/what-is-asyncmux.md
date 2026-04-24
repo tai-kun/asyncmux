@@ -66,11 +66,11 @@ Alternatively:
 ```ts
 class Runner {
   async write(path: string, data: string, signal: AbortSignal): Promise<void> {
-    const mux = await asyncmux(this, signal);
+    const lock = await asyncmux(this, signal);
     try {
       // ...
     } finally {
-      mux.release();
+      lock.release();
     }
   }
 }

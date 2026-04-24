@@ -103,12 +103,12 @@ class Runner {
       return;
     }
 
-    const mux = await asyncmux(this);
+    const lock = await asyncmux(this);
     try {
       await sleep(ms);
       console.log(value);
     } finally {
-      mux.release();
+      lock.release();
     }
   }
 }

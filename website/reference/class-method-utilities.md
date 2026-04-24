@@ -266,15 +266,15 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async create(data: string, signal?: AbortSignal) {
-    let mux;
+    let lock;
     if (__STRICT_MODE__) {
-      mux = asyncmux(this, signal);
+      lock = asyncmux(this, signal);
     }
 
     try {
       // ...
     } finally {
-      mux?.release();
+      lock?.release();
     }
   }
 }
@@ -339,15 +339,15 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async read(data: string, signal?: AbortSignal) {
-    let mux;
+    let lock;
     if (__STRICT_MODE__) {
-      mux = asyncmux.readonly(this, signal);
+      lock = asyncmux.readonly(this, signal);
     }
 
     try {
       // ...
     } finally {
-      mux?.release();
+      lock?.release();
     }
   }
 }
