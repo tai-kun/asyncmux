@@ -17,12 +17,12 @@ export default class AsyncmuxLock {
   }
 
   public get released(): boolean {
-    return !!this.#releaseFn;
+    return this.#releaseFn === null;
   }
 
   public release(): void {
     // すでに解放関数が null の場合は、二重解放とみなしてエラーを投げます。
-    if (!this.#releaseFn) {
+    if (this.#releaseFn === null) {
       throw new LockReleasedError();
     }
 
@@ -37,7 +37,7 @@ export default class AsyncmuxLock {
 
   public [Symbol.dispose](): void {
     // すでに解放済みの場合は何もしません。
-    if (!this.#releaseFn) {
+    if (this.#releaseFn === null) {
       return;
     }
 
