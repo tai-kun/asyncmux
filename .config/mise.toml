@@ -48,7 +48,7 @@ run = "npx vitepress preview website"
 
 [tasks.update]
 run = [
-  "npx npm-check-updates --target minor -u --cooldown 3",
+  "npx npm-check-updates --target minor -u --cooldown 3 --reject oxfmt",
   "npm install",
   "npx playwright install --with-deps",
   "npm audit",
