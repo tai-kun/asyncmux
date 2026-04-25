@@ -46,8 +46,8 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: "npm を最新にする"
-        run: npm install -g npm@latest
+      - name: "npm のバージョンを固定"
+        run: npm install -g npm@11.13.0
 
       - name: "依存関係をインストール"
         run: npm i
