@@ -1,0 +1,6 @@
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude: []
+onlyBuiltDependencies: []
+strictDepBuilds: true
+blockExoticSubdeps: true
+trustPolicy: no-downgrade

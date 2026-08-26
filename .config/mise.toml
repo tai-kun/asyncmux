@@ -1,6 +1,9 @@
+[settings]
+minimum_release_age = "7d"
+
 [tools]
-node = "22"
-npm = "11.13.0"
+node = "24"
+pnpm = "10"
 
 [tasks.test]
 run = [
@@ -10,6 +13,7 @@ run = [
   { task = "test:lint" },
   { task = "test:typecheck" },
 ]
+env = { CI = 1 }
 
 [tasks."test:server"]
 run = "npx vitest --config ./.config/vitest.server.ts"
@@ -26,30 +30,22 @@ run = "npx oxlint --config ./.config/.oxlintrc.json"
 [tasks."test:typecheck"]
 run = [
   "npx tsc --noEmit --project ./.config/tsconfig.base.json",
+  "npx tsc --noEmit --project ./.config/tsconfig.test.json",
   "npx tsc --noEmit --project ./.config/tsconfig.client.json",
   "npx tsc --noEmit --project ./.config/tsconfig.server.json",
   "npx tsc --noEmit --project ./.config/tsconfig.config.json",
 ]
 
-[tasks.fmt]
+[tasks.format]
 run = "npx oxfmt --config ./.config/.oxfmtrc.json"
 
 [tasks.lint]
 run = "npx oxlint --config ./.config/.oxlintrc.json"
 
-[tasks."docs:dev"]
-run = "npx vitepress dev website"
-
-[tasks."docs:build"]
-run = "npx vitepress build website"
-
-[tasks."docs:preview"]
-run = "npx vitepress preview website"
-
 [tasks.update]
 run = [
-  "npx npm-check-updates --target minor -u --cooldown 3 --reject oxfmt",
-  "npm install",
+  "npx npm-check-updates --target minor -u --cooldown 7",
+  "pnpm install",
   "npx playwright install --with-deps",
-  "npm audit",
+  "pnpm audit",
 ]

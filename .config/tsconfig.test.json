@@ -1,9 +1,10 @@
 {
   "extends": ["@tsconfig/node24", "@tsconfig/strictest"],
-  "include": ["./global.d.ts", "../tests/**/*.server.test.ts"],
+  "include": ["./global.d.ts", "../tests/**/*"],
+  "exclude": ["../tests/**/*.client.test.ts", "../tests/**/*.server.test.ts"],
   "compilerOptions": {
     "types": ["node", "vite/client"],
-    "lib": ["ESNext"],
+    "lib": ["DOM", "ESNext"],
     "noEmit": true,
     "target": "es2020",
     "module": "nodenext",
