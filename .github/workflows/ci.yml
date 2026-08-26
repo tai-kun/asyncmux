@@ -19,7 +19,7 @@ jobs:
 
       - name: "依存関係をインストール"
         run: |
-          npm ci
+          pnpm i
           npx playwright install --with-deps
 
       - name: "テスト"
