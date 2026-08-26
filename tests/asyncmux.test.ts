@@ -227,3 +227,74 @@ describe("AbortSignal による中断", () => {
     await expect(promise).rejects.toThrow(abortError);
   });
 });
+
+describe("高競合時の順序保証と相互排他", () => {
+  test("同一キーへの大量の書き込み要求は FIFO 順で実行される", async ({ expect }) => {
+    // 準備
+    const mux = new Asyncmux();
+    const order: number[] = [];
+    let active = 0;
+    let maxActive = 0;
+
+    // 実行
+    await Promise.all(
+      Array.from({ length: 50 }, (_, i) =>
+        mux.lock("shared").then((lock) => {
+          active++;
+          maxActive = max(maxActive, active);
+          order.push(i);
+          active--;
+          lock.release();
+        }),
+      ),
+    );
+
+    // 検証
+    expect(order).toStrictEqual(Array.from({ length: 50 }, (_, i) => i));
+    expect(maxActive).toBe(1);
+  });
+
+  test("混在負荷でも相互排他と共有読み取りが維持される", async ({ expect }) => {
+    // 準備
+    const mux = new Asyncmux();
+    const violations: string[] = [];
+    const readers = { a: 0, b: 0 };
+    const writers = { a: 0, b: 0 };
+
+    // 実行
+    await Promise.all(
+      Array.from({ length: 60 }, (_, i) => {
+        const key = i % 2 === 0 ? "a" : "b";
+
+        if (i % 3 === 2) {
+          return mux.lock(key).then(async (lock) => {
+            writers[key]++;
+            if (readers[key] > 0 || writers[key] > 1) {
+              violations.push(`W overlapped: ${i}`);
+            }
+
+            await sleep(1);
+            writers[key]--;
+            lock.release();
+          });
+        }
+
+        return mux.rLock(key).then(async (lock) => {
+          readers[key]++;
+          if (writers[key] > 0) violations.push(`R overlapped W: ${i}`);
+
+          await sleep(1);
+          readers[key]--;
+          lock.release();
+        });
+      }),
+    );
+
+    // 検証
+    expect(violations).toStrictEqual([]);
+  });
+});
+
+function max(a: number, b: number): number {
+  return a > b ? a : b;
+}

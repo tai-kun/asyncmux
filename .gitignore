@@ -225,3 +225,4 @@ dist/
 cache/
 __screenshots__/
 .tmp-*
+benchmark-*.json

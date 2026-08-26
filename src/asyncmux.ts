@@ -1,4 +1,4 @@
-import log from "./_logger.js";
+import log, { isLogDebugEnabled } from "./_logger.js";
 import AsyncmuxLock from "./asyncmux-lock.js";
 
 /**
@@ -196,6 +196,18 @@ export default class Asyncmux {
   #queue: LockRequest[];
 
   /**
+   * キュー内の待機中の要求の状態をまとめたものです。常に `#queue` の内容と一致します。
+   *
+   * 新しい要求がキュー内の先行要求と競合するかどうかを、キュー全体を走査せずに判定するために使用します。
+   */
+  readonly #pendingState: LockState;
+
+  /**
+   * `#queue` の再構築時に使い回すバッファーです。
+   */
+  #queueSwap: LockRequest[];
+
+  /**
    * 現在アクティブ（取得中）なロックの状態です。
    */
   readonly #activeState: LockState;
@@ -215,7 +227,9 @@ export default class Asyncmux {
    */
   public constructor() {
     this.#queue = [];
+    this.#queueSwap = [];
     this.#activeState = new LockState();
+    this.#pendingState = new LockState();
     this.#isProcessing = false;
     this.#needsRecheck = false;
   }
@@ -233,13 +247,17 @@ export default class Asyncmux {
     key: string | null,
     signal: AbortSignal | undefined,
   ): Promise<AsyncmuxLock> {
-    log.debug`Enqueueing request: type=${type}, key=${key}`;
-
     // すでにシグナルが中断されている場合は、即座に拒否されたプロミスを返します。
     if (signal?.aborted) {
-      log.debug`Request immediately rejected due to aborted signal`;
+      if (isLogDebugEnabled()) {
+        log.debug`Request immediately rejected due to aborted signal`;
+      }
 
-      return Promise.reject(signal?.reason);
+      return Promise.reject(signal.reason);
+    }
+
+    if (isLogDebugEnabled()) {
+      log.debug`Enqueueing request: type=${type}, key=${key}`;
     }
 
     const { reject, resolve, promise } = Promise.withResolvers<AsyncmuxLock>();
@@ -248,13 +266,16 @@ export default class Asyncmux {
     if (signal) {
       // シグナルによるキャンセルが発生した際のハンドラーを定義します。
       const handleAbort = (): void => {
-        log.debug`Abort triggered for request: type=${type}, key=${key}`;
+        if (isLogDebugEnabled()) {
+          log.debug`Abort triggered for request: type=${type}, key=${key}`;
+        }
 
         const idx = this.#queue.indexOf(req);
         if (idx !== -1) {
           // キューから自分自身を削除し、理由を添えてプロミスを拒否します。
           this.#queue.splice(idx, 1);
-          reject(signal?.reason);
+          this.#pendingState.remove(req);
+          reject(signal.reason);
           // 自分がキューから抜けたことで、後続のロックが取得可能になる可能性があるため再評価します。
           this.#tryAcquire();
         }
@@ -274,12 +295,47 @@ export default class Asyncmux {
       };
     }
 
-    // キューの末尾に追加し、取得を試みます。
+    // アクティブなロックと待機キュー上の先行要求のどちらとも競合しない場合は、
+    // キューの走査を行わずに即座にロックを割り当てます。
+    // 先行要求と競合しないことは FIFO 順序・公平性に影響しないことが保証されており、
+    // また新しい要求の追加が既存の待機要求の取得可否を変えることはないため、
+    // 取得できない場合も `#tryAcquire()` による再走査は不要です。
+    if (!this.#activeState.conflicts(req) && !this.#pendingState.conflicts(req)) {
+      this.#activeState.add(req);
+      req.resolve(this.#createLock(req));
+
+      return promise;
+    }
+
+    // キューの末尾に追加します。取得可能な状態になるのはロック解放時など、
+    // 既存の状態が変化したタイミングです。
+    this.#pendingState.add(req);
     this.#queue.push(req);
-    this.#tryAcquire();
 
     // キューの追加まで同期的に行い、最後に Promise を返します。
     return promise;
+  }
+
+  /**
+   * 解放時にキューを再評価するロックオブジェクトを生成します。
+   *
+   * @param req ロックを割り当てる対象の要求です。
+   */
+  #createLock(req: LockRequest): AsyncmuxLock {
+    return new AsyncmuxLock(() => {
+      if (isLogDebugEnabled()) {
+        log.debug`Releasing lock: type=${req.type}, key=${req.key}`;
+      }
+
+      this.#activeState.remove(req);
+
+      if (isLogDebugEnabled()) {
+        log.debug((t) => t`State after release: ${this.#activeState.snapshot()}`);
+      }
+
+      // ロックが解放されたため、新しい要求が通る可能性を求めて再評価します。
+      this.#tryAcquire();
+    });
   }
 
   /**
@@ -288,58 +344,77 @@ export default class Asyncmux {
   #tryAcquire(): void {
     // すでに処理中の場合は、現在の処理が終了した後に再チェックするようにフラグを立てます。
     if (this.#isProcessing) {
-      log.debug`Already processing. Setting recheck flag.`;
+      if (isLogDebugEnabled()) {
+        log.debug`Already processing. Setting recheck flag.`;
+      }
 
       this.#needsRecheck = true;
       return;
     }
 
-    log.debug`Starting tryAcquire. Current queue length: ${this.#queue.length}`;
+    if (isLogDebugEnabled()) {
+      log.debug`Starting tryAcquire. Current queue length: ${this.#queue.length}`;
+    }
 
     this.#isProcessing = true;
     try {
       do {
         this.#needsRecheck = false;
 
+        const queue = this.#queue;
+        const nextQueue = this.#queueSwap;
+        nextQueue.length = 0;
+
         // ライタースターベーションを防止するためのシミュレーターです。
         // 現在アクティブなロックだけでなく、キュー上の自分より前にいる要求も考慮します。
-        const queueState = new LockState();
-        const nextQueue: LockRequest[] = [];
+        // 競合する要求が現れるまで生成されないため、無競合時の割り当てコストを抑えられます。
+        let queueState: LockState | null = null;
 
-        for (const req of this.#queue) {
+        let i = 0;
+        while (i < queue.length) {
+          const req = queue[i]!;
+          i++;
+
           const conflictWithActive = this.#activeState.conflicts(req);
-          const conflictWithQueue = queueState.conflicts(req);
+          const conflictWithQueue = queueState !== null && queueState.conflicts(req);
 
           // 現在実行中のロックと競合せず、かつキュー内の先行する要求とも競合しない場合のみ許可されます。
           if (!conflictWithActive && !conflictWithQueue) {
-            log.debug`Lock acquired: type=${req.type}, key=${req.key}`;
+            if (isLogDebugEnabled()) {
+              log.debug`Lock acquired: type=${req.type}, key=${req.key}`;
+            }
 
-            // アクティブな状態として登録します。
+            // アクティブな状態として登録し、待機状態からは除外します。
             this.#activeState.add(req);
+            this.#pendingState.remove(req);
 
             // ロックが解放された際に再度キューを動かすための仕掛けを施したオブジェクトを渡します。
-            const lock = new AsyncmuxLock(() => {
-              log.debug`Releasing lock: type=${req.type}, key=${req.key}`;
-
-              this.#activeState.remove(req);
-
-              log.debug((t) => t`State after release: ${this.#activeState.snapshot()}`);
-
-              // ロックが解放されたため、新しい要求が通る可能性を求めて再評価します。
-              this.#tryAcquire();
-            });
-
-            req.resolve(lock);
+            req.resolve(this.#createLock(req));
           } else {
             // 今回は取得できなかったため、次回のキューに残します。
             // また、後続の要求にとっての壁となるよう queueState に現在の要求を追加します。
-            queueState.add(req);
+            (queueState ??= new LockState()).add(req);
             nextQueue.push(req);
+
+            if (req.type === "W" && req.key === null) {
+              // グローバル書き込み要求はすべての要求と競合するため、
+              // 以降の要求も取得できないことが確定します。残りをそのまま残して走査を打ち切ります。
+              while (i < queue.length) {
+                nextQueue.push(queue[i]!);
+                i++;
+              }
+
+              break;
+            }
           }
         }
 
         // ロックを取得できなかった要求のみでキューを更新します。
-        this.#queue = nextQueue;
+        // 1 つも取得できなかった場合は内容が同一のため、配列の差し替えを省略します。
+        if (nextQueue.length < queue.length) {
+          this.#queue = nextQueue;
+          this.#queueSwap = queue;
+        }
 
         // 処理中に needsRecheck が立てられた場合、ループを継続します。
       } while (this.#needsRecheck);
@@ -347,7 +422,9 @@ export default class Asyncmux {
       // 処理の完了フラグを戻します。
       this.#isProcessing = false;
 
-      log.debug`Finished tryAcquire cycle. Remaining queue: ${this.#queue.length}`;
+      if (isLogDebugEnabled()) {
+        log.debug`Finished tryAcquire cycle. Remaining queue: ${this.#queue.length}`;
+      }
     }
   }
 

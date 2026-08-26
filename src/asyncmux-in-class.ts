@@ -1,4 +1,4 @@
-import log from "./_logger.js";
+import log, { isLogDebugEnabled } from "./_logger.js";
 import AsyncmuxLock from "./asyncmux-lock.js";
 import { DecoratorSupportError, ReentrantLockError } from "./errors.js";
 
@@ -248,7 +248,9 @@ const tracker: ReentrancyTracker = createTracker();
 function assertNotReentrant(type: LockType, this_: object): void {
   const stack = tracker.getStack(this_);
   if (stack && stack.length > 0 && (stack.includes("W") || type === "W")) {
-    log.debug`Reentrant lock request detected: type=${type}`;
+    if (isLogDebugEnabled()) {
+      log.debug`Reentrant lock request detected: type=${type}`;
+    }
 
     throw new ReentrantLockError();
   }
@@ -261,7 +263,9 @@ function assertNotReentrant(type: LockType, this_: object): void {
  * @param state 現在のミューテックス状態です。
  */
 function processQueue(this_: object, state: MutexState): void {
-  log.debug((t) => t`Processing queue. Current state: ${state.snapshot()}`);
+  if (isLogDebugEnabled()) {
+    log.debug((t) => t`Processing queue. Current state: ${state.snapshot()}`);
+  }
 
   // キューが空になるか、ロックがブロックされるまでループを回します。
   while (state.queue.length > 0) {
@@ -274,7 +278,9 @@ function processQueue(this_: object, state: MutexState): void {
         state.queue.shift();
         state.writing = true;
 
-        log.debug`Write lock ACQUIRED.`;
+        if (isLogDebugEnabled()) {
+          log.debug`Write lock ACQUIRED.`;
+        }
 
         // 中断ハンドラーが登録されている場合は、解決前にリスナーを削除してメモリーリークを防ぎます。
         if (req.signal && req.handleAbort) {
@@ -284,7 +290,9 @@ function processQueue(this_: object, state: MutexState): void {
         // ロックオブジェクトを生成して Promise を解決します。
         req.resolve(createLock(this_, state, "W"));
       } else {
-        log.debug`Write lock blocked. Waiting...`;
+        if (isLogDebugEnabled()) {
+          log.debug`Write lock blocked. Waiting...`;
+        }
 
         // ロックを獲得できないため、キューの処理をここで停止して待機します。
         // 書き込み待機がある場合、後続の読み込みリクエストを処理せず順序を維持します。
@@ -296,7 +304,9 @@ function processQueue(this_: object, state: MutexState): void {
         state.queue.shift();
         state.readerCount++;
 
-        log.debug`Read lock ACQUIRED. Total readers: ${state.readerCount}`;
+        if (isLogDebugEnabled()) {
+          log.debug`Read lock ACQUIRED. Total readers: ${state.readerCount}`;
+        }
 
         // 中断ハンドラーを解除します。
         if (req.signal && req.handleAbort) {
@@ -306,7 +316,9 @@ function processQueue(this_: object, state: MutexState): void {
         req.resolve(createLock(this_, state, "R"));
         // 読み込みロックは並行して実行できるため、ループを継続して次のリクエストを確認します。
       } else {
-        log.debug`Read lock blocked by writer. Waiting...`;
+        if (isLogDebugEnabled()) {
+          log.debug`Read lock blocked by writer. Waiting...`;
+        }
 
         // 書き込み中のため待機します。
         break;
@@ -325,7 +337,9 @@ function processQueue(this_: object, state: MutexState): void {
  */
 function createLock(this_: object, state: MutexState, type: LockType): AsyncmuxLock {
   return new AsyncmuxLock(() => {
-    log.debug`Releasing ${type === "W" ? "Write" : "Read"} lock.`;
+    if (isLogDebugEnabled()) {
+      log.debug`Releasing ${type === "W" ? "Write" : "Read"} lock.`;
+    }
 
     // ロック状態を更新します。
     if (type === "W") {
@@ -342,7 +356,9 @@ function createLock(this_: object, state: MutexState, type: LockType): AsyncmuxL
 
     // どのリソースも使っておらず、待機キューも空である場合は stateMap からエントリーを削除して、メモリー効率を最適化します。
     if (state.readerCount === 0 && !state.writing && state.queue.length === 0) {
-      log.debug`State is idle. Cleaning up stateMap.`;
+      if (isLogDebugEnabled()) {
+        log.debug`State is idle. Cleaning up stateMap.`;
+      }
 
       stateMap.delete(this_);
     }
@@ -358,14 +374,18 @@ function createLock(this_: object, state: MutexState, type: LockType): AsyncmuxL
  * @returns ロック獲得時に解決される Promise です。
  */
 function requestLock(type: LockType, this_: object, signal?: AbortSignal): Promise<AsyncmuxLock> {
-  log.debug`Requesting ${type === "W" ? "Write" : "Read"} lock.`;
+  if (isLogDebugEnabled()) {
+    log.debug`Requesting ${type === "W" ? "Write" : "Read"} lock.`;
+  }
 
   // 同じオブジェクトへの再入 (デッドロックになるロック要求) を検出した場合は即座にエラーを投げます。
   assertNotReentrant(type, this_);
 
   // リクエストの時点で既にシグナルが中断されている場合は、キューに追加せず即座にエラーを投げます。
   if (signal?.aborted) {
-    log.debug`Request aborted immediately (signal already aborted).`;
+    if (isLogDebugEnabled()) {
+      log.debug`Request aborted immediately (signal already aborted).`;
+    }
 
     return Promise.reject(signal?.reason);
   }
@@ -379,7 +399,9 @@ function requestLock(type: LockType, this_: object, signal?: AbortSignal): Promi
       // キューの中から自分自身のリクエストを探します。
       const idx = state.queue.indexOf(req);
       if (idx !== -1) {
-        log.debug`Request CANCELLED via AbortSignal.`;
+        if (isLogDebugEnabled()) {
+          log.debug`Request CANCELLED via AbortSignal.`;
+        }
 
         // 待機キューから自分を削除し、Promise を拒否状態にします。
         state.queue.splice(idx, 1);
