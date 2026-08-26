@@ -1,8 +1,8 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-import isDebugMode from "./_is-debug-mode";
-import proposalDecorators from "./_proposal-decorators";
+import isDebugMode from "./_is-debug-mode.js";
+import proposalDecorators from "./_proposal-decorators.js";
 
 export default defineConfig({
   plugins: [proposalDecorators()],

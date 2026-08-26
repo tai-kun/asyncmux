@@ -31,11 +31,6 @@ export class DecoratorSupportError extends ErrorBase<undefined> {
     this.prototype.name = "AsyncmuxDecoratorSupportError";
   }
 
-  /**
-   * `AsyncmuxDecoratorSupportError` クラスの新しいインスタンスを初期化します。
-   *
-   * @param options エラーのオプションです。
-   */
   public constructor(options?: ErrorOptions) {
     super("Requires Stage 3 decorator support", options);
   }
@@ -53,11 +48,6 @@ export class LockReleasedError extends ErrorBase<undefined> {
     this.prototype.name = "AsyncmuxLockReleasedError";
   }
 
-  /**
-   * `LockReleasedError` クラスの新しいインスタンスを初期化します。
-   *
-   * @param options エラーのオプションです。
-   */
   public constructor(options?: ErrorOptions) {
     super("Lock id already released", options);
   }

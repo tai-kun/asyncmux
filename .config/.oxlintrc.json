@@ -8,15 +8,15 @@
     "**/node_modules/**"
   ],
   "plugins": [
+    "eslint",
+    "typescript",
     "unicorn",
     "oxc",
-    "typescript",
     "import",
-    "react",
     "jsdoc",
-    "vitest",
+    "node",
     "promise",
-    "node"
+    "vitest"
   ],
   "categories": {
     "correctness": "error"

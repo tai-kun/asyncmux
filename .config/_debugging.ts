@@ -1,6 +1,6 @@
 import { configureSync, getConsoleSink } from "@logtape/logtape";
 
-import pkg from "../package.json";
+import pkg from "../package.json" with { type: "json" };
 
 // @ts-expect-error
 if (__DEBUG__) {

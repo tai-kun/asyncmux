@@ -4,3 +4,10 @@ onlyBuiltDependencies: []
 strictDepBuilds: true
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
+
+# TODO: vitepress を使わない
+allowBuilds:
+  esbuild: ""
+trustPolicyExclude:
+  - semver
+  - vite
