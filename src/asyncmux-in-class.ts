@@ -1,6 +1,6 @@
 import log from "./_logger.js";
 import AsyncmuxLock from "./asyncmux-lock.js";
-import { DecoratorSupportError } from "./errors.js";
+import { DecoratorSupportError, ReentrantLockError } from "./errors.js";
 
 /**
  * 要求するロックの種類を定義します。
@@ -111,6 +111,149 @@ function getOrCreateState(this_: object): MutexState {
   return state;
 }
 
+// -------------------------------------------------------------------------------------------------
+//
+// 再入検出
+//
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * オブジェクトごとに、その非同期処理コンテキスト内で保持中のロック種別のスタックを表します。
+ */
+type LockStackMap = Map<object, LockType[]>;
+
+/**
+ * 非同期処理コンテキストごとにロックの保持状況を追跡するためのインターフェースです。
+ */
+interface ReentrancyTracker {
+  /**
+   * 現在の非同期処理コンテキストにおける、指定されたオブジェクトのロック保持スタックを返します。
+   *
+   * @param target ロック対象のオブジェクトです。
+   * @returns 保持中のロック種別のスタックです。追跡されていない場合は `undefined` です。
+   */
+  getStack(target: object): readonly LockType[] | undefined;
+
+  /**
+   * 指定されたオブジェクトへのロック獲得を記録したコンテキスト内でコールバックを実行します。
+   *
+   * @param target ロック対象のオブジェクトです。
+   * @param type 獲得したロックの種別です。
+   * @param callback 実行するコールバック関数です。
+   * @returns コールバック関数の戻り値です。
+   */
+  run<T>(target: object, type: LockType, callback: () => T): T;
+}
+
+/**
+ * `node:async_hooks` の AsyncLocalStorage を利用して非同期処理全体を追跡するトラッカーです。
+ *
+ * await をまたいだ再入も検出できます。
+ */
+class AsyncContextTracker implements ReentrancyTracker {
+  #storage: {
+    getStore(): LockStackMap | undefined;
+    run<T>(store: LockStackMap, callback: () => T): T;
+  };
+
+  public constructor(storage: {
+    getStore(): LockStackMap | undefined;
+    run<T>(store: LockStackMap, callback: () => T): T;
+  }) {
+    this.#storage = storage;
+  }
+
+  public getStack(target: object): readonly LockType[] | undefined {
+    return this.#storage.getStore()?.get(target);
+  }
+
+  public run<T>(target: object, type: LockType, callback: () => T): T {
+    const next: LockStackMap = new Map(this.#storage.getStore() ?? []);
+    next.set(target, [...(next.get(target) ?? []), type]);
+
+    return this.#storage.run(next, callback);
+  }
+}
+
+/**
+ * 同期的な呼び出し範囲のみを追跡するフォールバックのトラッカーです。
+ *
+ * 非同期処理コンテキストを利用できない環境 (ブラウザーなど) で使用され、await をまたいだ再入は検出できません。
+ */
+class SyncStackTracker implements ReentrancyTracker {
+  #stacks = new WeakMap<object, LockType[]>();
+
+  public getStack(target: object): readonly LockType[] | undefined {
+    return this.#stacks.get(target);
+  }
+
+  public run<T>(target: object, type: LockType, callback: () => T): T {
+    let stack = this.#stacks.get(target);
+    if (!stack) {
+      stack = [];
+      this.#stacks.set(target, stack);
+    }
+
+    stack.push(type);
+    try {
+      return callback();
+    } finally {
+      stack.pop();
+    }
+  }
+}
+
+/**
+ * 再入検出用のトラッカーを作成します。
+ *
+ * `process.getBuiltinModule` を利用できるランタイム (Node.js 22.3 以上、Bun など) では AsyncLocalStorage ベースのトラッカーを使用し、それ以外の環境では同期的な呼び出し範囲のみを追跡するトラッカーにフォールバックします。
+ *
+ * @returns 作成したトラッカーです。
+ */
+function createTracker(): ReentrancyTracker {
+  try {
+    const proc = (globalThis as { process?: { getBuiltinModule?(id: string): unknown } }).process;
+    const asyncHooks = proc?.getBuiltinModule?.("node:async_hooks") as
+      | {
+          AsyncLocalStorage: new () => {
+            getStore(): LockStackMap | undefined;
+            run<T>(store: LockStackMap, callback: () => T): T;
+          };
+        }
+      | undefined;
+
+    if (asyncHooks && typeof asyncHooks.AsyncLocalStorage === "function") {
+      return new AsyncContextTracker(new asyncHooks.AsyncLocalStorage());
+    }
+  } catch {
+    // node:async_hooks を利用できない環境ではフォールバックします。
+  }
+
+  return new SyncStackTracker();
+}
+
+const tracker: ReentrancyTracker = createTracker();
+
+/**
+ * 同じオブジェクトに対する再入 (デッドロックになるロック要求) を検出した場合にエラーを投げます。
+ *
+ * - 書き込みロックの保持中は、読み書きどちらのロック要求でもデッドロックするため許可されません。
+ * - 読み取りロックの保持中に書き込みロックを要求した場合もデッドロックするため許可されません。
+ * - 読み取りロック同士は共有ロックとして扱われるため許可されます。
+ *
+ * @param type 要求するロックの種別です。
+ * @param this_ ロック対象のオブジェクトです。
+ * @throws {ReentrantLockError} デッドロックになる再入を検出した場合に投げられます。
+ */
+function assertNotReentrant(type: LockType, this_: object): void {
+  const stack = tracker.getStack(this_);
+  if (stack && stack.length > 0 && (stack.includes("W") || type === "W")) {
+    log.debug`Reentrant lock request detected: type=${type}`;
+
+    throw new ReentrantLockError();
+  }
+}
+
 /**
  * 待機キューを処理し、可能な限りロックを割り当てます。
  *
@@ -217,6 +360,9 @@ function createLock(this_: object, state: MutexState, type: LockType): AsyncmuxL
 function requestLock(type: LockType, this_: object, signal?: AbortSignal): Promise<AsyncmuxLock> {
   log.debug`Requesting ${type === "W" ? "Write" : "Read"} lock.`;
 
+  // 同じオブジェクトへの再入 (デッドロックになるロック要求) を検出した場合は即座にエラーを投げます。
+  assertNotReentrant(type, this_);
+
   // リクエストの時点で既にシグナルが中断されている場合は、キューに追加せず即座にエラーを投げます。
   if (signal?.aborted) {
     log.debug`Request aborted immediately (signal already aborted).`;
@@ -303,8 +449,8 @@ function wrapClassMethod(
     return (async (lockPromise) => {
       const lock = await lockPromise;
       try {
-        // 必ずメソッドの完了まで待機します。
-        const returns = await method.apply(this, args);
+        // メソッドの実行全体を再入検出の対象として記録します。
+        const returns = await tracker.run(this, type, () => method.apply(this, args));
         return returns;
       } finally {
         // メソッドの実行が完了してからロックを開放します。

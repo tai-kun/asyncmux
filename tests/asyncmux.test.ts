@@ -3,21 +3,29 @@ import { beforeEach, describe, test } from "vitest";
 import Asyncmux from "../src/asyncmux.js";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-let log: string[];
 
-beforeEach(() => {
-  log = [];
-});
-
+/**
+ * ロック対象タスクの開始と終了をログに記録します。
+ * 実行順序の検証に使用します。
+ */
 async function runTask(type: "W" | "R", id: string, delay: number) {
   log.push(`${type}-${id} start`);
   await sleep(delay);
   log.push(`${type}-${id} end`);
 }
 
+let log: string[];
+
+beforeEach(() => {
+  log = [];
+});
+
 describe("lock", () => {
   test("異なるキーは互いに影響しない", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.lock("key1");
@@ -29,6 +37,7 @@ describe("lock", () => {
       })(),
     ]);
 
+    // 検証
     expect(log).toStrictEqual([
       "W-K1 start",
       "W-K2 start", // K1 を待たずに開始
@@ -38,7 +47,10 @@ describe("lock", () => {
   });
 
   test("同じキーは直列実行される", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.lock("key1");
@@ -50,6 +62,7 @@ describe("lock", () => {
       })(),
     ]);
 
+    // 検証
     expect(log).toStrictEqual([
       "W-K1 start",
       "W-K1 end",
@@ -59,7 +72,10 @@ describe("lock", () => {
   });
 
   test("キーなしは直列実行される", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.lock();
@@ -71,6 +87,7 @@ describe("lock", () => {
       })(),
     ]);
 
+    // 検証
     expect(log).toStrictEqual([
       "W-K1 start",
       "W-K1 end",
@@ -80,7 +97,10 @@ describe("lock", () => {
   });
 
   test("キーなしロックは全ロックに対して排他制御を行う", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.lock();
@@ -104,7 +124,8 @@ describe("lock", () => {
       })(),
     ]);
 
-    expect(log).toEqual([
+    // 検証
+    expect(log).toStrictEqual([
       "W-K1 start",
       "W-K1 end",
       "W-K2 start", // K1 を待ってから開始
@@ -121,7 +142,10 @@ describe("lock", () => {
 
 describe("rLock", () => {
   test("複数の読み取り操作は並列実行される", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.rLock("key1");
@@ -133,7 +157,8 @@ describe("rLock", () => {
       })(),
     ]);
 
-    expect(log).toEqual([
+    // 検証
+    expect(log).toStrictEqual([
       "R-K1 start",
       "R-K2 start", // K1 を待たずに開始
       "R-K2 end",
@@ -144,7 +169,10 @@ describe("rLock", () => {
 
 describe("lock, rLock", () => {
   test("書き込みロック中に読み取りロックは待機する", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.lock("key1");
@@ -156,11 +184,15 @@ describe("lock, rLock", () => {
       })(),
     ]);
 
-    expect(log).toEqual(["W-1 start", "W-1 end", "R-1 start", "R-1 end"]);
+    // 検証
+    expect(log).toStrictEqual(["W-1 start", "W-1 end", "R-1 start", "R-1 end"]);
   });
 
   test("読み取りロック中に書き込みロックは待機する", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
+
+    // 実行
     await Promise.all([
       (async () => {
         using _ = await mux.rLock("key1");
@@ -172,12 +204,14 @@ describe("lock, rLock", () => {
       })(),
     ]);
 
-    expect(log).toEqual(["R-1 start", "R-1 end", "W-1 start", "W-1 end"]);
+    // 検証
+    expect(log).toStrictEqual(["R-1 start", "R-1 end", "W-1 start", "W-1 end"]);
   });
 });
 
 describe("AbortSignal による中断", () => {
   test("ロック待機中に中断された場合、エラーを投げる", async ({ expect }) => {
+    // 準備
     const mux = new Asyncmux();
     const ac = new AbortController();
     const abortError = new Error("Abort");
@@ -189,6 +223,7 @@ describe("AbortSignal による中断", () => {
     // 3. 待機中に中断を実行
     ac.abort(abortError);
 
+    // 実行と検証
     await expect(promise).rejects.toThrow(abortError);
   });
 });

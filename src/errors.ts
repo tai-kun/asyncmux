@@ -54,3 +54,20 @@ export class LockReleasedError extends ErrorBase<undefined> {
 }
 
 setErrorMessage(LockReleasedError, "ロックはすでに解放済みです。", "ja");
+
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * [API Reference](https://tai-kun.github.io/asyncmux/reference/errors.html#reentrant-lock-error)
+ */
+export class ReentrantLockError extends ErrorBase<undefined> {
+  static {
+    this.prototype.name = "AsyncmuxReentrantLockError";
+  }
+
+  public constructor(options?: ErrorOptions) {
+    super("Cannot acquire a lock while the same lock is already held", options);
+  }
+}
+
+setErrorMessage(ReentrantLockError, "保持中のロックを再度獲得することはできません", "ja");

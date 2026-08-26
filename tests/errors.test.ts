@@ -9,16 +9,18 @@ beforeEach(() => {
 
 describe("DecoratorSupportError", () => {
   test("globalThis.Error を継承している", ({ expect }) => {
-    // Arrange & Act & Assert
+    // 実行と検証
     expect(new DecoratorSupportError()).toBeInstanceOf(globalThis.Error);
   });
 
   test("言語別にメッセージが変わる", ({ expect }) => {
-    // Arrange & Act & Assert
+    // 実行と検証
     expect(new DecoratorSupportError().message).toBe("Requires Stage 3 decorator support");
 
-    // Arrange & Act & Assert
+    // 準備
     setGlobalConfig({ lang: "ja" });
+
+    // 実行と検証
     expect(new DecoratorSupportError().message).toBe(
       "ステージ 3 のデコレーターのサポートが必要です",
     );
