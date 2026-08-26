@@ -51,6 +51,10 @@ class Runner {
 }
 ```
 
+::: warning
+Reentrancy is not supported. While a locked method is running, calling a method that requests a write lock on the same instance (a method decorated with `@asyncmux` / `@asyncmux.readonly`, or the `asyncmux()` function) throws a `ReentrantLockError` to prevent deadlocks.
+:::
+
 ### Read-Only Lock (`@asyncmux.readonly`) {#readonly-lock}
 
 Allows multiple read operations to execute in parallel, but will wait if a method decorated with `@asyncmux` (write lock) is currently running.
@@ -132,14 +136,16 @@ class Runner {
 
 ## Advanced Control via General API {#advanced-api}
 
-Use `asyncmux.create()` to create and manage lock objects anywhere in your code.
+Use `new Asyncmux()` to create a lock object and manage locks anywhere in your code.
 
 ### Fine-Grained Control with Keys
 
 Locks sharing the same key are mutually exclusive, while those with different keys run in parallel.
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 // Serial execution for 'key1'
 await Promise.all([
@@ -159,7 +165,9 @@ await Promise.all([
 Calling `lock()` without a key creates a **global lock that excludes all other locks** within that instance.
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 using _ = await mux.lock(); // Blocks all processing for key1, key2, etc.
 ```

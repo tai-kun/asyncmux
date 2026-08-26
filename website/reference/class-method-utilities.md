@@ -61,7 +61,11 @@ await Promise.all([updatePromiseA, updatePromiseB]);
 // update: B
 ```
 
-以下の例では、書き込みロック中のクラスメソッド内で、書き込みロックを要求する他のクラスメソッドを実行します。
+::: warning
+再入 (デッドロックになるロックの再獲得) はサポートされていません。書き込みロックを保持しているクラスメソッドの実行中に、同じインスタンスに対して書き込みロックを要求するクラスメソッド (`@asyncmux` が付与されたメソッド) や読み取りロックを要求するクラスメソッド (`@asyncmux.readonly` が付与されたメソッド) を呼び出すと、`ReentrantLockError` が投げられます。読み取りロックを保持している場合に書き込みロックを要求する場合も同様です。読み取りロック同士は共有ロックとして扱われるため、`@asyncmux.readonly` が付与されたクラスメソッド内で `@asyncmux.readonly` が付与されたクラスメソッドを呼び出すことはできます。
+:::
+
+以下の例では、書き込みロック中のクラスメソッド内で、書き込みロックを要求する他のクラスメソッドを実行すると `ReentrantLockError` が投げられます。
 
 ```ts
 import { asyncmux } from "asyncmux";
@@ -69,10 +73,11 @@ import { asyncmux } from "asyncmux";
 class Service {
   @asyncmux
   async create() {
-    const updatePromiseA = service.update("3s", "A");
-    const updatePromiseB = service.update("1s", "B");
+    // 書き込みロック保持中に書き込みロックを要求するためデッドロックになります。
+    // ロックの獲得を要求した時点で ReentrantLockError が投げられます。
+    const updatePromise = service.update("3s", "A");
 
-    await Promise.all([updatePromiseA, updatePromiseB]);
+    await updatePromise;
   }
 
   @asyncmux
@@ -84,38 +89,12 @@ class Service {
 
 const service = new Service();
 
-await service.create();
-// update: A
-// update: B
+await service.create(); // Error: 保持中のロックを再度獲得することはできません
 ```
 
-以下の例では、書き込みロック中のクラスメソッド内で、読み取りロックを要求するクラスメソッドを実行します。
-
-```ts
-import { asyncmux } from "asyncmux";
-
-class Service {
-  @asyncmux
-  async create() {
-    const readPromiseA = service.read("3s", "A");
-    const readPromiseB = service.read("1s", "B");
-
-    await Promise.all([readPromiseA, readPromiseB]);
-  }
-
-  @asyncmux.readonly
-  async read(duration: string, id: string) {
-    await sleep(duration);
-    console.log(`read: ${id}`);
-  }
-}
-
-const service = new Service();
-
-await service.create();
-// read: B
-// read: A
-```
+::: info
+`ReentrantLockError` の検出には非同期処理コンテキストを利用します。Node.js 22.3 以上や Bun など `process.getBuiltinModule` を利用できる環境では await をまたいだ再入も検出されますが、ブラウザーなど非同期処理コンテキストを利用できない環境では、同期的な呼び出し範囲のみ検出され、それ以外の再入はデッドロックします。
+:::
 
 ### `@asyncmux.readonly` {#decorator-asyncmux-readonly}
 
@@ -253,7 +232,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async create(data: string, signal?: AbortSignal) {
-    using _ = asyncmux(this, signal);
+    using _ = await asyncmux(this, signal);
     // ...
   }
 }
@@ -268,7 +247,7 @@ class Service {
   async create(data: string, signal?: AbortSignal) {
     let lock;
     if (__STRICT_MODE__) {
-      lock = asyncmux(this, signal);
+      lock = await asyncmux(this, signal);
     }
 
     try {
@@ -326,7 +305,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async read(data: string, signal?: AbortSignal) {
-    using _ = asyncmux.readonly(this, signal);
+    using _ = await asyncmux.readonly(this, signal);
     // ...
   }
 }
@@ -341,7 +320,7 @@ class Service {
   async read(data: string, signal?: AbortSignal) {
     let lock;
     if (__STRICT_MODE__) {
-      lock = asyncmux.readonly(this, signal);
+      lock = await asyncmux.readonly(this, signal);
     }
 
     try {

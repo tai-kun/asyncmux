@@ -78,7 +78,7 @@ class Runner {
 
 ### Fine-grained Locking {#fine-grained-lock}
 
-By creating an API instance with `asyncmux.create()`, you can acquire locks for specific resources using key strings. Omitting the key string allows you to acquire a global lock across all resources.
+By creating a lock object with `new Asyncmux()`, you can acquire locks for specific resources using key strings. Omitting the key string allows you to acquire a global lock across all resources.
 
 ```ts
 import { Asyncmux } from "asyncmux";

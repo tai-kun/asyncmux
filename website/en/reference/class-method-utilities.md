@@ -61,7 +61,11 @@ await Promise.all([updatePromiseA, updatePromiseB]);
 // update: B
 ```
 
-The following example demonstrates executing another class method that requires a write lock from within a class method that already holds a write lock.
+::: warning
+Reentrancy (re-acquiring a lock in a way that would deadlock) is not supported. While a class method that holds a write lock is running, calling another class method on the same instance that requires a write lock (a method decorated with `@asyncmux`) or a read lock (a method decorated with `@asyncmux.readonly`) throws a `ReentrantLockError`. The same applies when a write lock is requested while a read lock is held. Read locks are shared locks, so a method decorated with `@asyncmux.readonly` can call another method decorated with `@asyncmux.readonly` on the same instance.
+:::
+
+The following example demonstrates that executing another class method that requires a write lock from within a class method that already holds a write lock throws a `ReentrantLockError`.
 
 ```ts
 import { asyncmux } from "asyncmux";
@@ -69,10 +73,11 @@ import { asyncmux } from "asyncmux";
 class Service {
   @asyncmux
   async create() {
-    const updatePromiseA = service.update("3s", "A");
-    const updatePromiseB = service.update("1s", "B");
+    // Requesting a write lock while holding one would deadlock.
+    // A ReentrantLockError is thrown as soon as the lock acquisition is requested.
+    const updatePromise = service.update("3s", "A");
 
-    await Promise.all([updatePromiseA, updatePromiseB]);
+    await updatePromise;
   }
 
   @asyncmux
@@ -84,38 +89,12 @@ class Service {
 
 const service = new Service();
 
-await service.create();
-// update: A
-// update: B
+await service.create(); // Error: Cannot acquire a lock while the same lock is already held
 ```
 
-The following example demonstrates executing class methods that require a read lock from within a class method that holds a write lock.
-
-```ts
-import { asyncmux } from "asyncmux";
-
-class Service {
-  @asyncmux
-  async create() {
-    const readPromiseA = service.read("3s", "A");
-    const readPromiseB = service.read("1s", "B");
-
-    await Promise.all([readPromiseA, readPromiseB]);
-  }
-
-  @asyncmux.readonly
-  async read(duration: string, id: string) {
-    await sleep(duration);
-    console.log(`read: ${id}`);
-  }
-}
-
-const service = new Service();
-
-await service.create();
-// read: B
-// read: A
-```
+::: info
+`ReentrantLockError` detection uses an async context. On runtimes where `process.getBuiltinModule` is available, such as Node.js 22.3+ and Bun, reentrancy across `await` boundaries is also detected. On environments where an async context is unavailable, such as browsers, only synchronous call ranges are detected and other reentrant calls still deadlock.
+:::
 
 ### `@asyncmux.readonly` {#decorator-asyncmux-readonly}
 
@@ -255,7 +234,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async create(data: string, signal?: AbortSignal) {
-    using _ = asyncmux(this, signal);
+    using _ = await asyncmux(this, signal);
     // ...
   }
 }
@@ -270,7 +249,7 @@ class Service {
   async create(data: string, signal?: AbortSignal) {
     let lock;
     if (__STRICT_MODE__) {
-      lock = asyncmux(this, signal);
+      lock = await asyncmux(this, signal);
     }
 
     try {
@@ -328,7 +307,7 @@ import { asyncmux } from "asyncmux";
 
 class Service {
   async read(data: string, signal?: AbortSignal) {
-    using _ = asyncmux.readonly(this, signal);
+    using _ = await asyncmux.readonly(this, signal);
     // ...
   }
 }
@@ -343,7 +322,7 @@ class Service {
   async read(data: string, signal?: AbortSignal) {
     let lock;
     if (__STRICT_MODE__) {
-      lock = asyncmux.readonly(this, signal);
+      lock = await asyncmux.readonly(this, signal);
     }
 
     try {

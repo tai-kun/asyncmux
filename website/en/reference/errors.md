@@ -43,3 +43,15 @@ This error is thrown when an attempt is made to release a lock that has already 
 ### Troubleshooting {#lock-released-troubleshooting}
 
 Ensure that the code does not attempt to release a lock that has already been released.
+
+## `ReentrantLockError` {#reentrant-lock-error}
+
+This error is thrown when reentrant (re-acquiring) lock acquisition that would deadlock is detected. It is thrown when a write lock or a read lock is requested for the same instance while a class method holding a write lock is running, or when a write lock is requested while a read lock is held.
+
+### Troubleshooting {#reentrant-lock-troubleshooting}
+
+Do not request a write lock for the same instance from within a locked method of that instance. Calls between read locks (calling a method decorated with `@asyncmux.readonly` from within a method decorated with `@asyncmux.readonly`) are allowed as shared locks.
+
+::: info
+On runtimes where an async context is available, such as Node.js 22.3+ and Bun, reentrancy across `await` boundaries is also detected. On environments where it is unavailable, such as browsers, only synchronous call ranges are detected and other reentrant calls still deadlock without throwing.
+:::

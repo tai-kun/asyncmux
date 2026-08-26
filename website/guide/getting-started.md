@@ -51,6 +51,10 @@ class Runner {
 }
 ```
 
+::: warning
+再入はサポートされていません。ロック対象のメソッドの実行中に、同じインスタンスに対して書き込みロックを要求するメソッド (`@asyncmux` / `@asyncmux.readonly` が付与されたメソッドや関数 `asyncmux()`) を呼び出すと、デッドロックを防ぐため `ReentrantLockError` が投げられます。
+:::
+
 ### 読み取り専用ロック (`@asyncmux.readonly`) {#readonly-lock}
 
 複数の読み取り操作は並列に実行されますが、`@asyncmux` が付いたメソッドが実行中の場合は待機します。
@@ -132,14 +136,16 @@ class Runner {
 
 ## 汎用 API による高度な制御 {#advanced-api}
 
-`asyncmux.create()` を使用して、任意の場所でロックオブジェクトを作成・管理できます。
+`new Asyncmux()` でロックオブジェクトを作成することで、任意の場所でロックを作成・管理できます。
 
 ### キーによる細かい制御
 
 同じキーを指定したロック同士は排他され、異なるキー同士は並列に実行されます。
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 // key1 同士は直列
 await Promise.all([
@@ -159,7 +165,9 @@ await Promise.all([
 キーを指定せずに `lock()` を呼び出すと、**そのインスタンス内のすべてのロックに対して排他**となります。
 
 ```ts
-const mux = asyncmux.create();
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
 
 using _ = await mux.lock(); // すべての key1, key2 等の処理をブロックする
 ```
