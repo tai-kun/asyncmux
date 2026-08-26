@@ -7,7 +7,7 @@ trustPolicy: no-downgrade
 
 # TODO: vitepress を使わない
 allowBuilds:
-  esbuild: ""
+  esbuild: true
 trustPolicyExclude:
   - semver
   - vite
