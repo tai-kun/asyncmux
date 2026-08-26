@@ -1,11 +1,5 @@
 {
   "$schema": "../node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [
-    "**/.history/**",
-    "**/.Trash/**",
-    "**/dist/**",
-    "**/docs/**",
-    "**/node_modules/**"
-  ],
+  "ignorePatterns": ["docs/**"],
   "sortImports": true
 }

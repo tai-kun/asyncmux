@@ -224,3 +224,4 @@ $RECYCLE.BIN/
 dist/
 cache/
 __screenshots__/
+.tmp-*

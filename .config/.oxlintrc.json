@@ -1,12 +1,6 @@
 {
   "$schema": "../node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": [
-    "**/.history/**",
-    "**/.Trash/**",
-    "**/dist/**",
-    "**/docs/**",
-    "**/node_modules/**"
-  ],
+  "ignorePatterns": ["docs/**"],
   "plugins": [
     "eslint",
     "typescript",
@@ -23,8 +17,8 @@
   },
   "rules": {
     "no-unused-expressions": "off", // logtape で使用します。
-    "no-unused-vars": "warn",
-    "vitest/no-focused-tests": "off"
+    "no-unused-vars": "warn", // 早すぎる最適化です。
+    "vitest/no-focused-tests": "off" // デバッグ作業を容易にします。
   },
   "env": {
     "builtin": true
