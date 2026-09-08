@@ -36,18 +36,18 @@
     "@tsconfig/node24": "24.0.5",
     "@tsconfig/strictest": "2.0.8",
     "@types/node": "24.13.3",
-    "@vitest/browser": "4.1.10",
-    "@vitest/browser-playwright": "4.1.10",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
     "npm-check-updates": "19.6.6",
-    "oxfmt": "0.63.0",
-    "oxlint": "1.78.0",
+    "oxfmt": "0.65.0",
+    "oxlint": "1.80.0",
     "oxlint-tsgolint": "0.25.0",
     "playwright": "1.62.1",
     "typescript": "7.0.2",
     "valibot": "1.4.2",
-    "vite": "8.2.1",
+    "vite": "8.2.2",
     "vitepress": "1.6.4",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "peerDependencies": {
     "@logtape/logtape": "^2.0.0"

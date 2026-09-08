@@ -3,7 +3,7 @@ minimum_release_age = "7d"
 
 [tools]
 node = "24"
-pnpm = "10"
+pnpm = "11"
 
 [tasks.test]
 run = [
@@ -65,6 +65,7 @@ npx oxlint --config ./.tmp-oxlintrc.json
 [tasks.update]
 run = [
   "npx npm-check-updates --target minor -u --cooldown 7",
+  "pnpm update --include-github-actions",
   "pnpm install",
   "npx playwright install --with-deps",
   "pnpm audit",

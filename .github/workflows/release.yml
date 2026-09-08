@@ -21,13 +21,13 @@ jobs:
       id-token: write
     steps:
       - name: "バージョン解析"
-        uses: tai-kun/gha-semver-parser@v1
+        uses: tai-kun/gha-semver-parser@514211b08d1c083a5346942f3fa437f8435d1518 # v1.0.2
         with:
           version: ${{ github.event.inputs.version }}
         id: semver
 
       - name: "チェックアウト"
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: "pnpm をインストール"
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
@@ -35,7 +35,7 @@ jobs:
           version: 10
 
       - name: "Node.js をセットアップ"
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           cache: pnpm
           node-version: 24.x

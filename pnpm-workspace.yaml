@@ -1,9 +1,12 @@
-minimumReleaseAge: 10080
+minimumReleaseAge: 10080 # 7 日
 minimumReleaseAgeExclude: []
 onlyBuiltDependencies: []
 strictDepBuilds: true
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
+update:
+  ignoreDeps:
+    - "*" # パッケージの更新は ncu に任せる
 
 # TODO: vitepress を使わない
 allowBuilds:
