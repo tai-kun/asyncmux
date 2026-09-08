@@ -36,6 +36,7 @@ export default defineConfig({
               items: [
                 { text: "asyncmux とは？", link: "/guide/what-is-asyncmux" },
                 { text: "はじめに", link: "/guide/getting-started" },
+                { text: "ベンチマーク", link: "/guide/benchmarks" },
               ],
             },
           ],
@@ -69,6 +70,7 @@ export default defineConfig({
               items: [
                 { text: "What is asyncmux?", link: "/en/guide/what-is-asyncmux" },
                 { text: "Getting Started", link: "/en/guide/getting-started" },
+                { text: "Benchmarks", link: "/en/guide/benchmarks" },
               ],
             },
           ],
