@@ -1,15 +1,54 @@
 import type { BlumeData } from "blume";
 
-/** リダイレクトページが受け取る props です。 */
-export interface RedirectPathProps {
-  /** 転送先の候補になるロケールです。設定順に並びます。 */
-  locales: string[];
+/**
+ * リダイレクトページが転送先として提示するロケールの情報です。
+ */
+export interface RedirectTarget {
+  /**
+   * 転送先のロケールコードです。
+   */
+  code: string;
+
+  /**
+   * 言語の表示名です。
+   *
+   * JavaScript が動かない環境で表示する転送先リンクのラベルに使います。
+   */
+  label: string;
+
+  /**
+   * サイトのルートからの転送先のパスです。
+   *
+   * デプロイ先のベースパスと Blume のベースパスを含みます。
+   */
+  href: string;
 }
 
-/** ロケールなしの URL からロケール付きの URL へ転送するページです。 */
+/**
+ * リダイレクトページが受け取る props です。
+ */
+export interface RedirectPathProps {
+  /**
+   * クライアント側で転送先の URL を組み立てるためのプレフィックスです。
+   *
+   * デプロイ先のベースパスと Blume のベースパスを連結した値です。
+   */
+  basePath: string;
+
+  /**
+   * 転送先の候補です。設定順に並びます。
+   */
+  targets: RedirectTarget[];
+}
+
+/**
+ * ロケールなしの URL からロケール付きの URL へ転送するページです。
+ */
 export interface RedirectPath {
   params: {
-    /** ベースパスを含むルートパラメーターです。空の場合はサイトのルートです。 */
+    /**
+     * ベースパスを含むルートパラメーターです。未定義の場合はサイトのルートを表します。
+     */
     slug: string | undefined;
   };
   props: RedirectPathProps;
@@ -21,24 +60,31 @@ export interface RedirectPath {
 const isPlaceholderLocale = (code: string): boolean => code.trim() === "";
 
 /**
- * ロケールなしの URL (`/rest`、`/version/rest`) を、Blume が生成します。
- * ロケール付きの URL (`/locale/rest`、`/locale/version/rest`) へ転送します。
- * リダイレクトページの一覧を作成します。
+ * Blume が生成するロケールなしの URL (`/rest`、`/version/rest`) を、ロケール付きの URL (`/locale/rest`、`/locale/version/rest`) へ転送するリダイレクトページの一覧を作成します。
  *
- * 各ページの `locales` には、その URL に対応するページを配信している
- * ロケールだけを設定順で渡します。これにより、クライアント側は訪問者の
- * 言語に合うロケールを選んでから転送できます。
+ * 各ページの `targets` には、その URL に対応するページを配信しているロケールだけを設定順で渡します。これにより、クライアント側は訪問者の言語に合うロケールを選んでから転送できます。
+ *
+ * - サイドバー非表示のページと、どのロケールも配信していない URL は対象外です。
+ * - 実在するページと同じ URL にはリダイレクトページを作成しません。
+ * - JavaScript が動かない場合に備えて、転送先はページ上に一覧でも表示します。
+ *
+ * @param data Blume がビルド時に生成する、サイト全体のデータです。
+ * @param deployBase デプロイ先のベースパスです。Astro の `BASE_URL` (`deployment.base`) に対応し、URL の組み立てでは `data.config.basePath` の前に付きます。
+ * @returns ロケールなしの URL ごとのリダイレクトページの定義です。i18n が設定されていない場合は空の配列です。
  */
-export const getRedirectPaths = (data: BlumeData): RedirectPath[] => {
+export const getRedirectPaths = (data: BlumeData, deployBase: string = ""): RedirectPath[] => {
   const { basePath, i18n, versions } = data.config;
   if (!i18n) {
     return [];
   }
 
+  const siteBase = `${deployBase.replace(/\/+$/, "")}${basePath}`;
+
   const locales = i18n.locales
     .map((locale) => locale.code)
     .filter((code) => !isPlaceholderLocale(code));
   const localeSet = new Set(locales);
+  const localeMeta = new Map(i18n.locales.map((locale) => [locale.code, locale]));
   const versionIds = new Set(versions?.archived.map((version) => version.id) ?? []);
 
   // 同じロケールなし URL が複数のロケールから参照されるため、slug ごとにロケールを集約します。
@@ -75,6 +121,9 @@ export const getRedirectPaths = (data: BlumeData): RedirectPath[] => {
     const path = toSlug(slug);
     return path === undefined ? "/" : `/${path}`;
   };
+  // サイトのルートはディレクトリの URL になるため末尾にスラッシュを付け、それ以外はルートのパスに合わせます。
+  const toHref = (slug: string, code: string): string =>
+    slug === "" ? `${siteBase}/${code}/` : `${siteBase}/${code}/${slug}`;
 
   // 実在するページと同じ URL にはリダイレクトページを作りません。
   // プレースホルダーロケールがトップレベルのコンテンツを配信している場合、その URL はロケールなしの URL と一致します。
@@ -87,7 +136,14 @@ export const getRedirectPaths = (data: BlumeData): RedirectPath[] => {
         slug: toSlug(slug),
       },
       props: {
-        locales: locales.filter((code) => slugLocales.has(code)),
+        basePath: siteBase,
+        targets: locales
+          .filter((code) => slugLocales.has(code))
+          .map((code) => ({
+            code,
+            label: localeMeta.get(code)?.label ?? code,
+            href: toHref(slug, code),
+          })),
       },
     }));
 };

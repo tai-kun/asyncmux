@@ -3,14 +3,17 @@ import data from "blume:data";
 import { getRedirectPaths } from "./_lib/redirect-paths.ts";
 import type { RedirectPathProps } from "./_lib/redirect-paths.ts";
 
+/**
+ * ロケールなしの URL ごとに、転送先の情報を持つリダイレクトページを生成します。
+ */
 export function getStaticPaths() {
-  return getRedirectPaths(data);
+  return getRedirectPaths(data, import.meta.env?.BASE_URL);
 }
 
-const { locales } = Astro.props as RedirectPathProps;
-const basePath = data.config.basePath;
-// 言語設定に合うロケールがなかった場合の転送先です。Blume のフォールバック
-// ロケールを優先し、ページを配信していないロケールは使いません。
+const { basePath, targets } = Astro.props as RedirectPathProps;
+// クライアント側の言語判定と転送に使うロケールです。設定順に並びます。
+const locales = targets.map((target) => target.code);
+// 言語設定に合うロケールがなかった場合の転送先です。Blume のフォールバックロケールを優先し、ページを配信していないロケールは使いません。
 const fallbackLocale = [data.config.i18n?.fallbackLocale, "en"].find(
   (code): code is string => typeof code === "string" && locales.includes(code)
 );
@@ -52,8 +55,7 @@ const fallbackLocale = [data.config.i18n?.fallbackLocale, "en"].find(
           .filter(Boolean)
           .slice(baseSegments);
 
-        // このページがすでにロケール付きの URL で配信されている場合は、
-        // ロケールを重ねて転送しないように 404 へ送ります。
+        // このページがすでにロケール付きの URL で配信されている場合は、ロケールを重ねて転送しないように 404 へ送ります。
         if (locales.includes(nextSegment)) {
           window.location.replace(`${basePath}/404`);
           return;
@@ -70,6 +72,18 @@ const fallbackLocale = [data.config.i18n?.fallbackLocale, "en"].find(
   </head>
 
   <body>
-    <p>Redirecting...</p>
+    <h1>Redirecting...</h1>
+    <p>If you are not redirected automatically, or if you are an AI agent or a client that does not run JavaScript, open one of these pages:</p>
+    <ul>
+      {
+        targets.map((target) => (
+          <li>
+            <a href={target.href} hreflang={target.code} lang={target.code}>
+              {target.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </body>
 </html>
