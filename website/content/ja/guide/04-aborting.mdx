@@ -1,0 +1,65 @@
+---
+title: 中断
+description: AbortSignal をロック要求に渡して、待機中のロック取得を中断する方法と、中断が起きるタイミングを説明します。
+---
+
+## 概要 \{#overview\}
+
+関数 API と `Asyncmux` クラスには、ロック待機を中断するための `AbortSignal` を渡せます。デコレーター API には渡せません。
+
+```ts
+// 関数 API
+using _ = await asyncmux(this, signal);
+```
+
+```ts
+// Asyncmux クラス
+using _ = await mux.lock({ key: "key", signal });
+```
+
+## 中断が起きるタイミング \{#timing\}
+
+- 呼び出し時にすでに中断されている場合、ロックは要求されず、`signal.reason` で即座に reject されます。
+- 待機中に中断されると、要求はキューから削除され、`signal.reason` で reject されます。後続の要求はそのまま処理されます。
+- ロックを取得した後に中断しても、取得済みのロックは解放されません。解放は `release()` または `using` で行います。
+
+```ts timeout.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const controller = new AbortController();
+
+const lockPromise = mux.lock({
+  key: "resource",
+  signal: controller.signal,
+});
+
+setTimeout(() => {
+  controller.abort(new Error("タイムアウトしました"));
+}, 1000);
+
+const lock = await lockPromise.catch((error) => {
+  // 中断された場合は signal.reason がそのまま渡されます。
+  console.error(error);
+  return null;
+});
+
+if (lock) {
+  try {
+    // ロックを取得して実行します。
+  } finally {
+    lock.release();
+  }
+}
+```
+
+## 中断理由 \{#reason\}
+
+`AbortController.abort()` に渡した値が `signal.reason` になります。引数を省略した場合は、実行環境の `AbortError`（`DOMException`）が理由になります。
+
+```ts
+const controller = new AbortController();
+controller.abort("中断理由");
+
+await asyncmux(target, controller.signal); // "中断理由" で拒否します。
+```

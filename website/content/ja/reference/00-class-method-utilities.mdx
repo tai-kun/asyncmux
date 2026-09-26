@@ -1,0 +1,104 @@
+---
+title: クラスメソッドユーティリティー
+description: asyncmux のデフォルトエクスポートが提供するデコレーターと関数のシグネチャー、引数、例外をまとめます。
+---
+
+`asyncmux` はデフォルトエクスポートです。クラスメソッドのデコレーターとしても、関数としても呼び出せます。
+
+```ts
+import { asyncmux } from "asyncmux";
+```
+
+## デコレーター `@asyncmux` \{#decorator-asyncmux\}
+
+対象の非同期クラスメソッドに書き込みロックを適用します。
+
+```ts
+function asyncmux<
+  TMethod extends (this: any, ...args: any) => Promise<any>,
+>(
+  method: TMethod,
+  context: unknown,
+): TMethod;
+```
+
+<TypeTable
+  type={{
+    method: {
+      type: "(this: any, ...args: any) => Promise<any>",
+      required: true,
+      description: "装飾する非同期クラスメソッドです。`Promise` を返す必要があります。",
+    },
+    context: {
+      type: "unknown",
+      required: true,
+      description: "Stage 3 のデコレーターコンテキストです。`addInitializer` を持たない場合は `DecoratorSupportError` を投げます。",
+    },
+  }}
+/>
+
+戻り値は、ロックの取得と解放を組み込んだメソッドです。呼び出しごとに `this` の書き込みロックを取得し、メソッドの実行が終わると解放します。
+
+- 再入を検出した場合は `ReentrantLockError` を投げます。
+- Stage 3 のデコレーターに対応していない場合は `DecoratorSupportError` を投げます。
+
+## 関数 `asyncmux()` \{#functional-asyncmux\}
+
+指定したオブジェクトの書き込みロックを取得します。
+
+```ts
+function asyncmux(this_: object, signal?: AbortSignal): Promise<AsyncmuxLock>;
+```
+
+<TypeTable
+  type={{
+    this_: {
+      type: "object",
+      required: true,
+      description: "ロック対象のオブジェクトです。",
+    },
+    signal: {
+      type: "AbortSignal",
+      description: "ロック待機を中断するためのシグナルです。中断された場合は `signal.reason` で reject されます。",
+    },
+  }}
+/>
+
+戻り値は、取得した `AsyncmuxLock` で解決される `Promise` です。解放方法は [AsyncmuxLock](/reference/general-utilities#asyncmux-lock) を参照してください。
+
+- 再入を検出した場合は同期的に `ReentrantLockError` を投げます。デコレーターで確立されたロックコンテキストの外では検出されません。
+- 関数を対象にすることはできません。第 1 引数が関数の場合、デコレーターとして扱われます。
+
+## デコレーター `@asyncmux.readonly` \{#decorator-asyncmux-readonly\}
+
+対象の非同期クラスメソッドに読み取りロックを適用します。シグネチャーと引数は `@asyncmux` と同じです。
+
+```ts
+function asyncmux.readonly<
+  TMethod extends (this: any, ...args: any) => Promise<any>,
+>(
+  method: TMethod,
+  context: unknown,
+): TMethod;
+```
+
+読み取りロック同士は並行して実行されます。書き込みロックが保持されている間は待機します。戻り値と例外は `@asyncmux` と共通です。
+
+## 関数 `asyncmux.readonly()` \{#functional-asyncmux-readonly\}
+
+指定したオブジェクトの読み取りロックを取得します。
+
+```ts
+function asyncmux.readonly(
+  this_: object,
+  signal?: AbortSignal,
+): Promise<AsyncmuxLock>;
+```
+
+引数と戻り値は `asyncmux()` と同じで、取得するロックの種類だけが異なります。
+
+## 関連項目 \{#see-also\}
+
+- [デコレーター](/guide/decorators)
+- [手動ロック](/guide/manual-locking)
+- [並行性モデル](/guide/concurrency)

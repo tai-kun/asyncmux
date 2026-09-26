@@ -1,0 +1,88 @@
+---
+title: 手動ロック
+description: asyncmux(this) と asyncmux.readonly(this) を使って任意の範囲をロックする方法と、AsyncmuxLock の解放ルールを説明します。
+---
+
+## 任意の範囲をロックする \{#overview\}
+
+メソッド全体ではなく、特定の範囲や条件を満たす場合だけロックしたいときは、`asyncmux` を関数として呼び出します。第 1 引数に渡したオブジェクトがロックの対象です。
+
+```ts
+const lock = await asyncmux(this); // 書き込みロック
+const readLock = await asyncmux.readonly(this); // 読み取りロック
+```
+
+戻り値は `AsyncmuxLock` です。ロックを解放するまで、同じオブジェクトに対する競合するロック要求は待機します。
+
+```ts runner.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Runner {
+  isOpen = true;
+
+  async run(ms: number) {
+    if (!this.isOpen) {
+      return; // ロックを取得する前に抜けます。
+    }
+
+    using _ = await asyncmux(this);
+
+    await sleep(ms);
+  }
+}
+```
+
+## `using` で自動解放する \{#using\}
+
+`AsyncmuxLock` は `Symbol.dispose` を実装しているため、`using` 構文を使うとスコープを抜けるときに自動で解放されます。
+
+```ts
+async function run() {
+  using _ = await asyncmux(this);
+  await sleep(10);
+  // スコープを抜けると自動で解放されます。
+}
+```
+
+## `release()` で明示的に解放する \{#release\}
+
+`using` が使えない場合は、`release()` を `finally` で呼び出してください。
+
+```ts
+const lock = await asyncmux(this);
+
+try {
+  await task();
+} finally {
+  lock.release();
+}
+```
+
+## 解放のルール \{#release-rules\}
+
+- `release()` を 2 回呼び出すと `LockReleasedError` が投げられます。
+- 解放済みのロックに対して `Symbol.dispose`（`using` による解放）が呼ばれても、エラーにはならず何も起こりません。
+- 解放処理が例外を投げた場合でも、ロックは解放済みとして扱われます。2 回目の `release()` は `LockReleasedError` になります。
+- `released` プロパティーで解放済みかどうかを確認できます。
+
+## 再入の注意 \{#reentrancy\}
+
+関数 API は、デコレーターのようにロックのコンテキストを登録しません。そのため、デコレーターが付いたメソッドの実行中でない限り、同じオブジェクトのロックを再取得しても `ReentrantLockError` にはならず、デッドロックします。
+
+```ts
+// デッドロックする例:
+const lock1 = await asyncmux(target);
+const lock2 = await asyncmux(target); // 永遠に待機します。
+```
+
+`@asyncmux` や `@asyncmux.readonly` が付いたメソッドの実行中は、そのコンテキストが再入検出の対象になります。詳しくは[並行性モデル](/guide/concurrency#reentrancy)を参照してください。
+
+## `AbortSignal` で中断する \{#abort\}
+
+第 2 引数に `AbortSignal` を渡すと、ロック待機を中断できます。詳しくは[中断](/guide/aborting)を参照してください。
+
+```ts
+using _ = await asyncmux(this, signal);
+```

@@ -1,0 +1,100 @@
+---
+title: キー付きロック
+description: Asyncmux クラスを使って、キーごとに独立したロックと、すべてをブロックするグローバルロックを管理する方法を説明します。
+---
+
+## `Asyncmux` クラス \{#overview\}
+
+`Asyncmux` クラスは、キーで識別される複数のロックを 1 つのインスタンスで管理します。同じキーの処理は排他され、異なるキーの処理は互いに影響しません。
+
+```ts example.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+
+async function update(key: string) {
+  using _ = await mux.lock(key);
+  // key ごとに排他の書き込みを行います。
+}
+
+// 異なるキーは並行して実行できます。
+await Promise.all([update("a"), update("b")]);
+```
+
+`Asyncmux` のインスタンス同士は独立しています。用途ごとに別のインスタンスを作ってください。
+
+## 書き込みロックと読み取りロック \{#lock-types\}
+
+- `lock(...)` — 書き込みロック（排他ロック）。同じキーのロックやグローバルロックと競合します。
+- `rLock(...)` — 読み取りロック（共有ロック）。読み取り同士は共存できます。
+
+```ts cache.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const cache = new Map<string, string>();
+
+async function read(key: string) {
+  using _ = await mux.rLock(key);
+  return cache.get(key);
+}
+
+async function write(key: string, value: string) {
+  using _ = await mux.lock(key);
+  cache.set(key, value);
+}
+```
+
+## キーの指定方法 \{#key-forms\}
+
+各メソッドは 3 通りの呼び出し方があります。
+
+```ts
+await mux.lock(); // キーなし（グローバルロック）
+await mux.lock("user:42"); // キーを指定
+await mux.lock({ key: "user:42", signal }); // オプションで指定
+```
+
+`rLock` も同じ 3 通りです。オプションの `key` を省略すると、キーなしのグローバルロックになります。
+
+## グローバルロック \{#global-locks\}
+
+キーを指定しない場合、そのロックはインスタンス内のすべてのロックと競合します。
+
+- `mux.lock()`（グローバル書き込みロック）は、ほかのすべてのロックをブロックします。
+- `mux.rLock()`（グローバル読み取りロック）は、すべての書き込みロックをブロックしますが、読み取りロック同士は共存できます。
+
+グローバル書き込みロックは、全キーを対象にした再構築やメンテナンス処理に向いています。
+
+```ts rebuild.ts
+async function rebuildAll() {
+  using _ = await mux.lock(); // すべてのキー付きロックを待たせます・
+  // 全件の再構築などを行います。
+}
+```
+
+## 競合規則 \{#conflicts\}
+
+要求するロックが、現在保持されているロックと競合するかどうかは次のとおりです。
+
+| 要求するロック | 競合する保持ロック | 共存できる保持ロック |
+| --- | --- | --- |
+| `lock()`（グローバル W） | すべて | なし |
+| `lock("K")`（キー付き W） | グローバル W/R、キー K の W/R | キー K 以外のキー付き W/R |
+| `rLock()`（グローバル R） | グローバル W、すべてのキー付き W | グローバル R、すべてのキー付き R |
+| `rLock("K")`（キー付き R） | グローバル W、キー K の W | グローバル R、キー K 以外の W、すべての R |
+
+競合する要求は到着順（FIFO）で処理されます。競合しない要求はキューの後ろに並ばず、そのまま取得できます。
+
+## 再入の注意 \{#reentrancy\}
+
+`Asyncmux` クラスは再入を検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。
+
+```ts deadlock.ts
+async function deadlock() {
+  using _ = await mux.lock("key");
+  await mux.lock("key"); // デッドロックします。
+}
+```
+
+同じキーを複数回ロックする必要がある場合は、ロックの範囲を見直してください。

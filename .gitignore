@@ -217,12 +217,6 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/node,linux,macos,windows
 
+.agents/
+.claude/
 .history/
-.Trash/
-.vitepress/
-.vitest-attachments/
-dist/
-cache/
-__screenshots__/
-.tmp-*
-benchmark-*.json

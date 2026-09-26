@@ -1,0 +1,142 @@
+---
+title: 汎用ユーティリティー
+description: Asyncmux クラスと AsyncmuxLock の API をまとめます。lock・rLock のシグネチャー、ロックオプション、解放のルールを説明します。
+---
+
+## `Asyncmux` クラス \{#asyncmux-class\}
+
+キーごとに独立したロックと、すべてのロックと競合するグローバルロックを管理します。
+
+```ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+```
+
+### `constructor()` \{#asyncmux-constructor\}
+
+```ts
+constructor();
+```
+
+引数はありません。インスタンスごとに独立したロック状態を持ちます。
+
+### `lock()` \{#mux-lock\}
+
+```ts
+lock(): Promise<AsyncmuxLock>;
+```
+
+キーなしの書き込みロック（グローバル書き込みロック）を取得します。インスタンス内のすべてのロックと競合します。
+
+### `lock(key)` \{#mux-lock-key\}
+
+```ts
+lock(key: string): Promise<AsyncmuxLock>;
+```
+
+指定したキーの書き込みロックを取得します。同じキーのロックとは競合し、異なるキーのロックとは共存できます。
+
+### `lock(options)` \{#mux-lock-options\}
+
+```ts
+lock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
+```
+
+オプションでキーと `AbortSignal` を指定して、書き込みロックを取得します。`key` を省略した場合はグローバル書き込みロックになります。
+
+```ts
+using _ = await mux.lock({ key: "user:42", signal: controller.signal });
+```
+
+### `rLock()` \{#mux-rlock\}
+
+```ts
+rLock(): Promise<AsyncmuxLock>;
+```
+
+キーなしの読み取りロック（グローバル読み取りロック）を取得します。すべての書き込みロックと競合し、読み取りロックとは共存できます。
+
+### `rLock(key)` \{#mux-rlock-key\}
+
+```ts
+rLock(key: string): Promise<AsyncmuxLock>;
+```
+
+指定したキーの読み取りロックを取得します。同じキーの書き込みロックとは競合し、読み取りロック同士は共存できます。
+
+### `rLock(options)` \{#mux-rlock-options\}
+
+```ts
+rLock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
+```
+
+オプションでキーと `AbortSignal` を指定して、読み取りロックを取得します。`key` を省略した場合はグローバル読み取りロックになります。
+
+### 共通の挙動 \{#asyncmux-common\}
+
+`lock` と `rLock` はすべて `AsyncmuxLock` で解決される `Promise` を返します。
+
+- 競合するロックが保持されている間は待機します。待機中の要求は到着順に処理されます。
+- `signal` が中断された場合、要求はキューから削除され、`signal.reason` で reject されます。
+- 再入は検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。
+
+競合の詳細は[キー付きロック](/guide/keyed-locks#conflicts)を参照してください。
+
+## `AsyncmuxLockOptions` \{#asyncmux-lock-options\}
+
+`lock` と `rLock` のオプションです。
+
+<TypeTable
+  type={{
+    key: {
+      type: "string",
+      description: "ロック対象のキーです。省略するとグローバルロックになります。",
+    },
+    signal: {
+      type: "AbortSignal",
+      description: "ロック待機を中断するためのシグナルです。",
+    },
+  }}
+/>
+
+## `AsyncmuxLock` クラス \{#asyncmux-lock\}
+
+取得したロックを表します。インスタンスは各 API の戻り値としてのみ得られ、コンストラクターは内部用です。
+
+### `released` \{#asyncmux-lock-released\}
+
+ロックが解放済みかどうかを返します。
+
+```ts
+get released(): boolean;
+```
+
+### `release()` \{#asyncmux-lock-release\}
+
+ロックを解放します。同じロックに対して 2 回呼び出すと `LockReleasedError` が投げられます。解放処理が例外を投げた場合でも、ロックは解放済みとして扱われます。
+
+```ts
+release(): void;
+```
+
+### `[Symbol.dispose]()` \{#asyncmux-lock-dispose\}
+
+`using` 構文による自動解放を実装します。解放済みの場合は何も行いません。
+
+```ts
+[Symbol.dispose](): void;
+```
+
+```ts
+{
+  using _ = await mux.lock("key");
+  // スコープを抜けると release() が呼ばれます。
+}
+```
+
+## 関連項目 \{#see-also\}
+
+- [キー付きロック](/guide/keyed-locks)
+- [手動ロック](/guide/manual-locking)
+- [中断](/guide/aborting)

@@ -1,0 +1,93 @@
+---
+title: デコレーター
+description: "@asyncmux と @asyncmux.readonly をクラスメソッドに付けて、インスタンス単位で排他制御を行う方法を説明します。"
+---
+
+## クラスメソッドを保護する \{#overview\}
+
+`@asyncmux` と `@asyncmux.readonly` は、`Promise` を返すクラスメソッドに付けます。ロックの対象はメソッドを実行しているインスタンス（`this`）です。メソッドの実行が終わるとロックは自動で解放されるため、解放漏れは発生しません。
+
+## `@asyncmux` — 書き込みロック \{#write-lock\}
+
+`@asyncmux` を付けたメソッドは、同じインスタンス上で直列に実行されます。1 つの呼び出しが完了するまで、ほかの呼び出しは待機します。
+
+```ts counter.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Counter {
+  #count = 0;
+
+  @asyncmux
+  async increment() {
+    const current = this.#count;
+    await sleep(10);
+    this.#count = current + 1;
+  }
+}
+```
+
+`increment()` を同時に呼び出しても、`#count` の更新は失われません。
+
+```ts
+const counter = new Counter();
+
+// 2 回の呼び出しは直列に実行されます。
+await Promise.all([counter.increment(), counter.increment()]);
+```
+
+## `@asyncmux.readonly` — 読み取りロック \{#read-lock\}
+
+`@asyncmux.readonly` を付けたメソッド同士は並行に実行できます。`@asyncmux` を付けたメソッドが実行中の場合は、それが完了するまで待機します。
+
+```ts data-store.ts
+import { asyncmux } from "asyncmux";
+
+class DataStore {
+  #data = new Map<string, string>();
+
+  @asyncmux
+  async update(key: string, value: string) {
+    // 書き込みは排他です。
+    this.#data.set(key, value);
+  }
+
+  @asyncmux.readonly
+  async read(key: string) {
+    // 読み取り同士は並行、書き込みとは排他です。
+    return this.#data.get(key);
+  }
+}
+```
+
+## ロックの範囲 \{#lock-scope\}
+
+- ロックはインスタンスごとに独立しています。別のインスタンスのメソッドは互いに影響しません。
+- メソッドが例外を投げた場合もロックは解放されます。
+- ロックを保持するのはメソッドの実行中だけです。メソッドから戻った後にロックが残ることはありません。
+
+## 再入 \{#reentrancy\}
+
+ロックを保持したまま同じインスタンスのメソッドを呼び出すと、デッドロックを防ぐために `ReentrantLockError` が投げられます。読み取りロック同士の再入だけは、共有ロックとして許可されます。
+
+```ts
+class Service {
+  @asyncmux
+  async outer() {
+    // 書き込みロックを保持したまま同じインスタンスのメソッドを呼ぶとエラーになります。
+    await this.inner();
+  }
+
+  @asyncmux
+  async inner() {}
+}
+```
+
+詳しい検出ルールは[並行性モデル](/guide/concurrency#reentrancy)を参照してください。
+
+## 注意点 \{#caveats\}
+
+- デコレーターには `AbortSignal` を渡せません。待機を中断したい場合は[関数 API](/guide/manual-locking)を使ってください。
+- Stage 3 のデコレーターに対応していない環境では、`DecoratorSupportError` が投げられます。
+- デコレーターを付けられるのはクラスメソッドだけです。通常の関数やアロー関数のプロパティーには使えません。

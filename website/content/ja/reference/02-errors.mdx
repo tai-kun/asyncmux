@@ -1,0 +1,110 @@
+---
+title: エラー
+description: asyncmux が公開するエラークラスと、メッセージを言語別に切り替える setErrorMessage の使い方をまとめます。
+---
+
+## `ErrorBase` \{#error-base\}
+
+asyncmux のエラークラスの基底クラスです。`Error` を継承し、メッセージを言語別に切り替えられます。
+
+```ts
+import { ErrorBase } from "asyncmux";
+
+class MyError extends ErrorBase<undefined> {
+  public constructor(options?: ErrorOptions) {
+    super("My error message", options);
+  }
+}
+```
+
+<TypeTable
+  type={{
+    meta: {
+      type: "TMeta",
+      description: "エラーに付随する任意のメタデータです。メッセージを関数で生成する場合に参照できます。",
+    },
+    prefix: {
+      type: "string | undefined",
+      description: "メッセージの先頭に付与する文字列です（静的プロパティー）。",
+    },
+  }}
+/>
+
+メッセージは `message` プロパティーを参照したときに解決されます。言語は `i18n-error-base` が valibot のグローバル設定（`getGlobalConfig().lang`）から取得し、既定値は `"en"` です。
+
+```ts
+import { setGlobalConfig } from "valibot";
+import { LockReleasedError } from "asyncmux";
+
+setGlobalConfig({ lang: "ja" });
+
+new LockReleasedError().message; // "ロックはすでに解放済みです。"
+```
+
+## `setErrorMessage()` \{#set-error-message\}
+
+エラークラスに言語別のメッセージを登録します。組み込みのエラーに新しい言語を追加したり、既存のメッセージを上書きしたりできます。
+
+```ts
+function setErrorMessage(
+  reference: typeof ErrorBase,
+  message: string | ((meta: unknown) => string),
+  lang: string | Iterable<string>,
+): void;
+```
+
+`reference` には `ErrorBase` を継承したクラスを指定します。
+
+```ts
+import { setErrorMessage, ReentrantLockError } from "asyncmux";
+
+setErrorMessage(ReentrantLockError, "同じロックを再取得することはできません", "ja");
+```
+
+第 2 引数に関数を渡すと、`meta` を受け取ってメッセージを組み立てられます。第 3 引数に複数の言語コードを渡すと、まとめて登録します。
+
+## `DecoratorSupportError` \{#decorator-support-error\}
+
+Stage 3 のデコレーターに対応していない環境で `@asyncmux` を使ったときに投げられます。
+
+```ts
+class DecoratorSupportError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## `LockReleasedError` \{#lock-released-error\}
+
+解放済みのロックに対して `release()` を呼び出したときに投げられます。
+
+```ts
+class LockReleasedError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## `ReentrantLockError` \{#reentrant-lock-error\}
+
+デッドロックになる再入を検出したときに投げられます。検出の条件は[並行性モデル](/guide/concurrency#reentrancy)を参照してください。
+
+```ts
+class ReentrantLockError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## 組み込みメッセージ \{#built-in-messages\}
+
+asyncmux は組み込みのエラーに英語と日本語のメッセージを登録しています。
+
+| クラス | `name` | 英語 | 日本語 |
+| --- | --- | --- | --- |
+| `DecoratorSupportError` | `AsyncmuxDecoratorSupportError` | `Requires Stage 3 decorator support` | `ステージ 3 のデコレーターのサポートが必要です` |
+| `LockReleasedError` | `AsyncmuxLockReleasedError` | `Lock id already released` | `ロックはすでに解放済みです。` |
+| `ReentrantLockError` | `AsyncmuxReentrantLockError` | `Cannot acquire a lock while the same lock is already held` | `保持中のロックを再度獲得することはできません` |
+
+各クラスは `ErrorOptions` を受け取るため、`cause` で元のエラーを保持できます。
+
+```ts
+throw new ReentrantLockError({ cause: originalError });
+```

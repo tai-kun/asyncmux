@@ -1,0 +1,67 @@
+---
+title: インストール
+description: asyncmux のインストール方法と、デコレーター・using 構文・再入検出に必要な動作要件を説明します。
+---
+
+## パッケージをインストールする \{#install-package\}
+
+```package-install
+npm i asyncmux
+```
+
+## 動作要件 \{#requirements\}
+
+asyncmux は ESM 専用のパッケージです。
+
+- **デコレーター API** — Stage 3（ES 標準）のデコレーターが必要です。TypeScript では、`experimentalDecorators` を有効にせずにコンパイルしてください。Stage 3 に対応していない環境で `@asyncmux` を使うと、`DecoratorSupportError` が投げられます。
+- **`using` 構文** — ロックの自動解放に使えます。必須ではないため、`using` が使えない環境でも `release()` で解放できます。
+- **`node:async_hooks`** — 再入の検出に使います。`process.getBuiltinModule("node:async_hooks")` が利用できる環境（Node.js 22.3 以降や Bun など）では、`await` をまたいだ再入も検出します。利用できない環境では、同期的な呼び出し範囲のみを対象とする検出に切り替わります。
+
+## インポート \{#importing\}
+
+```ts
+import { asyncmux, Asyncmux, LockReleasedError, ReentrantLockError } from "asyncmux";
+import type { AsyncmuxLock, AsyncmuxLockOptions } from "asyncmux";
+```
+
+`AsyncmuxLock` は型としてのみ公開されています。ロックは各 API の戻り値として得られるものを使います。
+
+## ピア依存関係 \{#peer-dependencies\}
+
+asyncmux は次のパッケージをピア依存関係として参照します。npm 7 以降や pnpm は自動でインストールしますが、必要に応じて明示的に追加してください。
+
+- `@logtape/logtape` — デバッグログの出力に使います。
+- `valibot` — エラーメッセージの言語設定に使います（`i18n-error-base` のピア依存関係）。
+
+## TypeScript の設定 \{#typescript\}
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext", "DOM"],
+    "experimentalDecorators": false
+  }
+}
+```
+
+`Symbol.dispose` の型を使う場合は、それを含む `lib`（`ESNext` など）を指定してください。
+
+## デバッグログを有効にする \{#debug-logging\}
+
+asyncmux は `@logtape/logtape` のカテゴリー `asyncmux` にデバッグログを出力します。LogTape を設定すると、ロックの取得・解放やキューの状態を確認できます。
+
+```ts
+import { configure, getConsoleSink } from "@logtape/logtape";
+
+await configure({
+  sinks: {
+    console: getConsoleSink(),
+  },
+  loggers: [
+    { category: "asyncmux", sinks: ["console"], lowestLevel: "debug" },
+  ],
+});
+```

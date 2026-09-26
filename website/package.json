@@ -1,0 +1,12 @@
+{
+  "name": "website",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@tsconfig/node24": "24.0.5",
+    "@tsconfig/strictest": "2.0.8",
+    "@types/node": "24.13.5",
+    "blume": "^2.0.2",
+    "zod": "^4.6.5"
+  }
+}

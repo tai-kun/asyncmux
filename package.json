@@ -1,56 +1,17 @@
 {
-  "name": "asyncmux",
+  "name": "asyncmux-monorepo",
   "version": "0.0.0",
-  "description": "A utility for mutual exclusion using asynchronous processing",
-  "homepage": "https://tai-kun.github.io/asyncmux/guide/what-is-asyncmux.html",
-  "license": "MIT",
-  "repository": {
-    "url": "https://github.com/tai-kun/asyncmux"
-  },
-  "files": [
-    "dist",
-    "src",
-    "package.json",
-    "LICENSE",
-    "README.md"
+  "private": true,
+  "workspaces": [
+    "packages/asyncmux",
+    "website"
   ],
   "type": "module",
-  "sideEffects": false,
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsc --project ./.config/tsconfig.build.json"
-  },
-  "dependencies": {
-    "@tai-kun/is-promise-like": "0.0.5",
-    "i18n-error-base": "0.0.7",
-    "try-capture-stack-trace": "0.0.3"
-  },
   "devDependencies": {
-    "@babel/plugin-proposal-decorators": "7.29.7",
-    "@rolldown/plugin-babel": "0.2.3",
-    "@tsconfig/node24": "24.0.5",
-    "@tsconfig/strictest": "2.0.8",
-    "@types/node": "24.13.3",
-    "@vitest/browser": "4.1.11",
-    "@vitest/browser-playwright": "4.1.11",
-    "npm-check-updates": "19.6.6",
-    "oxfmt": "0.65.0",
-    "oxlint": "1.80.0",
-    "oxlint-tsgolint": "0.25.0",
-    "playwright": "1.62.1",
-    "typescript": "7.0.2",
-    "valibot": "1.4.2",
-    "vite": "8.2.2",
-    "vitepress": "1.6.4",
-    "vitest": "4.1.11"
-  },
-  "peerDependencies": {
-    "@logtape/logtape": "^2.0.0"
-  },
-  "readme": "README.md"
+    "npm-check-updates": "23.1.0",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "oxlint-tsgolint": "7.0.2002",
+    "typescript": "7.0.2"
+  }
 }

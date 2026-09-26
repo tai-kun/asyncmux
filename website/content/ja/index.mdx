@@ -1,0 +1,81 @@
+---
+title: asyncmux
+description: 非同期処理の排他制御を行うユーティリティーです。デコレーターとロックオブジェクトの 2 つの API で、同じリソースへの同時アクセスを防ぎます。
+---
+
+asyncmux は、非同期処理の排他制御を行うためのユーティリティーです。クラスメソッドにデコレーターを付ける方法と、ロックオブジェクトを取得する方法の 2 つを用意しています。どちらも書き込みロックと読み取りロックという同じモデルで動作するため、状況に応じて使い分けられます。
+
+## 主な機能 \{#features\}
+
+- **デコレーターによる自動ロック** — `@asyncmux` を付けたメソッドは排他実行され、`@asyncmux.readonly` を付けたメソッドは読み取り同士で並行実行されます。ロックの取得と解放はメソッドの呼び出しに合わせて自動で行われます。
+- **関数 API による手動ロック** — `await asyncmux(this)` で任意の範囲をロックできます。解放は `using` 構文または `release()` で行います。
+- **キー付きロック** — `Asyncmux` クラスでは、キーごとに独立したロックを管理できます。キーを指定しない場合は、すべてのロックと競合するグローバルロックになります。
+- **中断可能な待機** — `AbortSignal` を渡すと、ロック待機中の処理を中断できます。
+- **再入の検出** — ロック保持中に同じ対象のロックを要求すると、デッドロックを防ぐために `ReentrantLockError` を投げます。
+
+## クイックスタート \{#quickstart\}
+
+### デコレーターでメソッドを排他する \{#quickstart-decorator\}
+
+```ts counter.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Counter {
+  #count = 0;
+
+  @asyncmux
+  async increment() {
+    const current = this.#count;
+    await sleep(10);
+    this.#count = current + 1;
+  }
+}
+```
+
+`increment()` を同時に呼び出しても、2 回目は 1 回目の完了を待ってから実行されます。
+
+### キー付きロックでリソースを排他する \{#quickstart-keyed-lock\}
+
+```ts cache.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const cache = new Map<string, string>();
+
+async function read(key: string) {
+  // 同じ key の書き込みとは排他、ほかの読み取りとは並行です。
+  using _ = await mux.rLock(key);
+  return cache.get(key);
+}
+
+async function write(key: string, value: string) {
+  // 同じ key の読み書きとは排他です。
+  using _ = await mux.lock(key);
+  cache.set(key, value);
+}
+```
+
+## 動作要件 \{#requirements\}
+
+- デコレーター API を使うには、Stage 3 のデコレーターに対応した実行環境またはトランスパイラーが必要です。
+- ロックの自動解放に `using` 構文を使えますが、必須ではありません。`release()` でも解放できます。
+- 再入の検出精度は実行環境によって異なります。詳しくは[並行性モデル](/guide/concurrency)を参照してください。
+
+## 次に読む \{#next-steps\}
+
+<CardGroup cols={2}>
+  <Card title="インストール" href="/guide/installation" icon="download">
+    asyncmux の導入と動作要件を確認します。
+  </Card>
+  <Card title="デコレーター" href="/guide/decorators" icon="at-sign">
+    クラスメソッドを自動で排他実行します。
+  </Card>
+  <Card title="キー付きロック" href="/guide/keyed-locks" icon="key">
+    キーごとの排他制御とグローバルロックを使います。
+  </Card>
+  <Card title="リファレンス" href="/reference/general-utilities" icon="file-code">
+    すべての API のシグネチャーと引数を確認します。
+  </Card>
+</CardGroup>
