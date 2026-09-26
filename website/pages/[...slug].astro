@@ -1,129 +1,19 @@
 ---
 import data from "blume:data";
-import { z } from "zod/v4";
+import { getRedirectPaths } from "./_lib/redirect-paths.ts";
+import type { RedirectPathProps } from "./_lib/redirect-paths.ts";
 
 export function getStaticPaths() {
-  const BasePathSchema = z.union([
-    z.literal(""),
-    z
-      .string()
-      // 先頭をスラッシュから始めます。
-      .startsWith("/")
-      // 連続したスラッシュを削除します。
-      .refine((s) => s.replace(/\/\/+/g, "/"))
-      // 末尾のスラッシュを削除します。
-      .refine((s) => s.replace(/\/$/, "")),
-  ]);
-
-  // 空のロケールは Blume の挙動を修正するために設定しているため、ここではそれを除外する必要があります。
-  const locales = data.config.i18n!.locales.map(locale => locale.code).filter(code => code !== " ");
-  const basePath = BasePathSchema.parse(data.config.basePath);
-
-  const staticPaths: Record<string, {
-    params: {
-      slug: string;
-    };
-    props: {
-      entry:
-        | "/"
-        | "/:version"
-        | "/:version/:locale"
-      locales: Set<string>;
-    };
-  }> = {};
-  for (const route of data.routes) {
-    if (!route.indexable) {
-      continue;
-    }
-
-    // data.config.i18n.defaultLocale とそれ以外では、route.path のロケールとバージョンのセグメントの位置関係が入れ替わるため、両方のパターンで一致を検証します。
-    // 以下の 2 つの正表現による検証を入れ替えてはいけません。
-    const path = route.path.substring(basePath.length);
-    let match = path.match(new RegExp(
-      `^/(?<locale>${locales.join("|")})(?:/(?<version>v[^/]+))?/?(?<rest>.*)`
-    ));
-    if (!match) {
-      match = path.match(new RegExp(
-        `^/(?<version>v[^/]+)/(?<locale>${locales.join("|")})/?(?<rest>.*)`,
-      ));
-      if (!match) {
-        continue;
-      }
-    }
-
-    const {
-      version,
-      locale,
-      rest,
-    } = match.groups as { version?: string, locale: string, rest: string };
-
-    {
-      const slug = rest;
-      const path = staticPaths[slug] ||= {
-        params: {
-          slug,
-        },
-        props: {
-          entry: "/",
-          locales: new Set(),
-        }
-      }
-      path.props.locales.add(locale);
-    }
-
-    if (version) {
-      const slug = rest ? `${version}/${rest}` : `${version}`;
-      const path = staticPaths[slug] ||= {
-        params: {
-          slug,
-        },
-        props: {
-          entry: "/:version",
-          locales: new Set(),
-        },
-      };
-      path.props.locales.add(locale);
-    }
-
-    if (version) {
-      const slug = rest ? `${version}/${locale}/${rest}` : `${version}/${locale}`;
-      const path = staticPaths[slug] ||= {
-        params: {
-          slug,
-        },
-        props: {
-          entry: "/:version/:locale",
-          locales: new Set(),
-        },
-      };
-      path.props.locales.add(locale);
-    }
-  }
-
-  const slugPrefix = basePath.substring(1)
-  return Object.values(staticPaths).map(path => ({
-    ...path,
-    params: {
-      ...path.params,
-      slug: path.params.slug
-          ? `${slugPrefix}/${path.params.slug}`
-          : slugPrefix
-    }
-  }));
+  return getRedirectPaths(data);
 }
 
-// 空のロケールは Blume の挙動を修正するために設定しているため、ここではそれを除外する必要があります。
-const localesConfig = data.config.i18n!.locales
-  .map(locale => locale.code)
-  .filter(code => code !== " ");
-
-const {
-  entry,
-  locales: localesSet,
-} = Astro.props as Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
-const locales = [...localesSet];
+const { locales } = Astro.props as RedirectPathProps;
 const basePath = data.config.basePath;
-const fallbackLocale = localesConfig.includes("en") ? "en" : localesConfig[0]
+// 言語設定に合うロケールがなかった場合の転送先です。Blume のフォールバック
+// ロケールを優先し、ページを配信していないロケールは使いません。
+const fallbackLocale = [data.config.i18n?.fallbackLocale, "en"].find(
+  (code): code is string => typeof code === "string" && locales.includes(code)
+);
 ---
 
 <html lang="en">
@@ -131,122 +21,52 @@ const fallbackLocale = localesConfig.includes("en") ? "en" : localesConfig[0]
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark light">
-    {entry === "/" && (
-      <script
-        is:inline
-        define:vars={{
-          locales,
-          basePath,
-          fallbackLocale,
-        }}
-      >
-        (() => {
-          const redirect = locale => {
-            const pathname = basePath
-              ? location.pathname.replace(
-                  new RegExp(`^${basePath}(.*)`),
-                  `${basePath}/${locale}$1`,
-                )
-              : location.pathname.replace(
-                  new RegExp(`^(.*)`),
-                  `/${locale}$1`,
-                );
-
-            if (location.pathname !== pathname) {
-              location.pathname = pathname;
-            } else {
-              location.pathname = `${basePath}/404`;
-            }
-          };
-
-          for (const locale of locales) {
-            if (window.navigator.languages.includes(locale)) {
-              redirect(locale);
-              return;
-            }
-          }
-
-          if (locales.includes(fallbackLocale)) {
-            redirect(fallbackLocale);
-          } else {
-            redirect(locales[0]);
-          }
-        })()
-      </script>
-    )}
-    {entry === "/:version" && (
-      <script
-        is:inline
-        define:vars={{
-          locales,
-          basePath,
-          fallbackLocale,
-        }}
-      >
-        (() => {
-          const redirect = locale => {
-            const pathname = basePath
-              ? location.pathname.replace(
-                  new RegExp(`^${basePath}/([^/]+)(.*)`),
-                  `${basePath}/$1/${locale}$2`,
-                )
-              : location.pathname.replace(
-                  new RegExp(`^/([^/]+)(.*)`),
-                  `/$1/${locale}$2`,
-                );
-
-            if (location.pathname !== pathname) {
-              location.pathname = pathname;
-            } else {
-              location.pathname = `${basePath}/404`;
-            }
-          };
-
-          for (const locale of locales) {
-            if (window.navigator.languages.includes(locale)) {
-              redirect(locale);
-              return;
-            }
-          }
-
-          if (locales.includes(fallbackLocale)) {
-            redirect(fallbackLocale);
-          } else {
-            redirect(locales[0]);
-          }
-        })()
-      </script>
-    )}
-    {entry === "/:version/:locale" && (
-      <script
-        is:inline
-        define:vars={{
-          basePath,
-        }}
-      >
+    <script
+      is:inline
+      define:vars={{
+        locales,
+        fallbackLocale,
+        basePath,
+      }}
+    >
       (() => {
-        const redirect = () => {
-          const pathname = basePath
-            ? location.pathname.replace(
-                new RegExp(`^${basePath}/([^/]+)/([^/]+)(.*)`),
-                `${basePath}/$2/$1$3`,
-              )
-            : location.pathname.replace(
-                new RegExp(`^/([^/]+)/([^/]+)(.*)`),
-                `${basePath}/$1/$2$3`,
-              );
+        const matchLocale = () => {
+          for (const language of window.navigator.languages ?? []) {
+            const tag = language.toLowerCase();
+            const matched = locales.find(locale => {
+              const code = locale.toLowerCase();
+              return tag === code || tag.startsWith(`${code}-`);
+            });
 
-          if (location.pathname !== pathname) {
-            location.pathname = pathname;
-          } else {
-            location.pathname = `${basePath}/404`;
+            if (matched) {
+              return matched;
+            }
           }
+
+          return fallbackLocale ?? locales[0];
         };
 
-        redirect();
-      })()
-      </script>
-    )}
+        const baseSegments = basePath.split("/").filter(Boolean).length;
+        const [nextSegment] = window.location.pathname
+          .split("/")
+          .filter(Boolean)
+          .slice(baseSegments);
+
+        // このページがすでにロケール付きの URL で配信されている場合は、
+        // ロケールを重ねて転送しないように 404 へ送ります。
+        if (locales.includes(nextSegment)) {
+          window.location.replace(`${basePath}/404`);
+          return;
+        }
+
+        // ベースパスの直後にロケールを挿入した URL が Blume の正規 URL です。
+        const pathname = `${basePath}/${matchLocale()}${window.location.pathname.slice(basePath.length)}`;
+
+        window.location.replace(
+          `${pathname}${window.location.search}${window.location.hash}`,
+        );
+      })();
+    </script>
   </head>
 
   <body>

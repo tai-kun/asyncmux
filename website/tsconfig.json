@@ -5,6 +5,7 @@
     "types": ["node"],
     "lib": ["DOM", "ESNext"],
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "target": "es2020",
     "module": "nodenext",
     "moduleResolution": "nodenext",

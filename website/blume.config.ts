@@ -1,25 +1,19 @@
 import { defineConfig } from "blume";
 
 export default defineConfig({
-  title: "asyncmux",
-  description: "Documentation for asyncmux",
-  basePath: "/asyncmux",
   content: {
     root: "content",
+  },
+
+  title: "asyncmux",
+  description: "Documentation for asyncmux",
+  deployment: {
+    site: "https://tai-kun.github.io",
+    base: "/asyncmux",
   },
   navigation: {
     repo: "https://github.com/tai-kun/asyncmux",
   },
-  // versions: {
-  //   current: {
-  //     label: "Latest",
-  //   },
-  //   archived: [
-  //     {
-  //       id: "v0",
-  //     },
-  //   ],
-  // },
   // 空のロケールを設定し、それをデフォルト値にしないと、トップレベルのページが無いコンテンツのルーティングができません。
   // 空のロケールの選択肢は theme.css で消しています。
   i18n: {
@@ -39,4 +33,14 @@ export default defineConfig({
     ],
     defaultLocale: " ",
   },
+  // versions: {
+  //   current: {
+  //     label: "Latest",
+  //   },
+  //   archived: [
+  //     {
+  //       id: "v0",
+  //     },
+  //   ],
+  // },
 });
