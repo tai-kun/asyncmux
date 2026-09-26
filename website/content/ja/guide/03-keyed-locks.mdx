@@ -88,7 +88,7 @@ async function rebuildAll() {
 
 ## 再入の注意 \{#reentrancy\}
 
-`Asyncmux` クラスは再入を検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。
+`Asyncmux` クラスは既定では再入を検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。
 
 ```ts deadlock.ts
 async function deadlock() {
@@ -96,5 +96,18 @@ async function deadlock() {
   await mux.lock("key"); // デッドロックします。
 }
 ```
+
+`preventReentrancy` オプションで再入の検出を有効にできます。
+
+```ts reentrancy.ts
+const mux = new Asyncmux({ preventReentrancy: true });
+
+async function update() {
+  using _ = await mux.lock("key");
+  await mux.lock("key"); // ReentrantLockError
+}
+```
+
+検出は非同期コンテキスト単位で行われます。同じ同期実行内で開始された並行タスクからの要求は再入とみなされず、通常どおり待機します。また、`node:async_hooks` の `AsyncLocalStorage` を利用できない環境では検出は無効になります。
 
 同じキーを複数回ロックする必要がある場合は、ロックの範囲を見直してください。

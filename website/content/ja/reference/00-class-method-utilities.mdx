@@ -14,9 +14,7 @@ import { asyncmux } from "asyncmux";
 対象の非同期クラスメソッドに書き込みロックを適用します。
 
 ```ts
-function asyncmux<
-  TMethod extends (this: any, ...args: any) => Promise<any>,
->(
+function asyncmux<TMethod extends (this: any, ...args: any) => Promise<any>>(
   method: TMethod,
   context: unknown,
 ): TMethod;
@@ -32,7 +30,8 @@ function asyncmux<
     context: {
       type: "unknown",
       required: true,
-      description: "Stage 3 のデコレーターコンテキストです。`addInitializer` を持たない場合は `DecoratorSupportError` を投げます。",
+      description:
+        "Stage 3 のデコレーターコンテキストです。`addInitializer` を持たない場合は `DecoratorSupportError` を投げます。",
     },
   }}
 />
@@ -59,7 +58,7 @@ function asyncmux(this_: object, signal?: AbortSignal): Promise<AsyncmuxLock>;
     },
     signal: {
       type: "AbortSignal",
-      description: "ロック待機を中断するためのシグナルです。中断された場合は `signal.reason` で reject されます。",
+      description: "ロック待機を中断するためのシグナルです。中断された場合は `signal.reason` で拒否されます。",
     },
   }}
 />

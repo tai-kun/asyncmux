@@ -1,3 +1,4 @@
+import { type AsyncContextStorage, createAsyncContextStorage } from "./_async-context.js";
 import log, { isLogDebugEnabled } from "./_logger.js";
 import AsyncmuxLock from "./asyncmux-lock.js";
 import { DecoratorSupportError, ReentrantLockError } from "./errors.js";
@@ -151,15 +152,9 @@ interface ReentrancyTracker {
  * await をまたいだ再入も検出できます。
  */
 class AsyncContextTracker implements ReentrancyTracker {
-  #storage: {
-    getStore(): LockStackMap | undefined;
-    run<T>(store: LockStackMap, callback: () => T): T;
-  };
+  #storage: AsyncContextStorage<LockStackMap>;
 
-  public constructor(storage: {
-    getStore(): LockStackMap | undefined;
-    run<T>(store: LockStackMap, callback: () => T): T;
-  }) {
+  public constructor(storage: AsyncContextStorage<LockStackMap>) {
     this.#storage = storage;
   }
 
@@ -211,22 +206,10 @@ class SyncStackTracker implements ReentrancyTracker {
  * @returns 作成したトラッカーです。
  */
 function createTracker(): ReentrancyTracker {
-  try {
-    const proc = (globalThis as { process?: { getBuiltinModule?(id: string): unknown } }).process;
-    const asyncHooks = proc?.getBuiltinModule?.("node:async_hooks") as
-      | {
-          AsyncLocalStorage: new () => {
-            getStore(): LockStackMap | undefined;
-            run<T>(store: LockStackMap, callback: () => T): T;
-          };
-        }
-      | undefined;
+  const storage = createAsyncContextStorage<LockStackMap>();
 
-    if (asyncHooks && typeof asyncHooks.AsyncLocalStorage === "function") {
-      return new AsyncContextTracker(new asyncHooks.AsyncLocalStorage());
-    }
-  } catch {
-    // node:async_hooks を利用できない環境ではフォールバックします。
+  if (storage) {
+    return new AsyncContextTracker(storage);
   }
 
   return new SyncStackTracker();

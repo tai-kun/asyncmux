@@ -60,8 +60,6 @@ await configure({
   sinks: {
     console: getConsoleSink(),
   },
-  loggers: [
-    { category: "asyncmux", sinks: ["console"], lowestLevel: "debug" },
-  ],
+  loggers: [{ category: "asyncmux", sinks: ["console"], lowestLevel: "debug" }],
 });
 ```

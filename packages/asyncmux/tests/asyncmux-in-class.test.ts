@@ -64,7 +64,7 @@ describe("並行実行制御", () => {
     });
 
     // 検証
-    // 短時間待機して resolve されていないことを確認する。
+    // 短時間待機して解決されていないことを確認する。
     await sleep(50);
     expect(isReadResolved).toBe(false);
 

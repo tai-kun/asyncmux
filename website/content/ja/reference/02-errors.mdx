@@ -21,7 +21,8 @@ class MyError extends ErrorBase<undefined> {
   type={{
     meta: {
       type: "TMeta",
-      description: "エラーに付随する任意のメタデータです。メッセージを関数で生成する場合に参照できます。",
+      description:
+        "エラーに付随する任意のメタデータです。メッセージを関数で生成する場合に参照できます。",
     },
     prefix: {
       type: "string | undefined",
@@ -97,11 +98,11 @@ class ReentrantLockError extends ErrorBase<undefined> {
 
 asyncmux は組み込みのエラーに英語と日本語のメッセージを登録しています。
 
-| クラス | `name` | 英語 | 日本語 |
-| --- | --- | --- | --- |
-| `DecoratorSupportError` | `AsyncmuxDecoratorSupportError` | `Requires Stage 3 decorator support` | `ステージ 3 のデコレーターのサポートが必要です` |
-| `LockReleasedError` | `AsyncmuxLockReleasedError` | `Lock id already released` | `ロックはすでに解放済みです。` |
-| `ReentrantLockError` | `AsyncmuxReentrantLockError` | `Cannot acquire a lock while the same lock is already held` | `保持中のロックを再度獲得することはできません` |
+| クラス                  | `name`                          | 英語                                                        | 日本語                                          |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| `DecoratorSupportError` | `AsyncmuxDecoratorSupportError` | `Requires Stage 3 decorator support`                        | `ステージ 3 のデコレーターのサポートが必要です` |
+| `LockReleasedError`     | `AsyncmuxLockReleasedError`     | `Lock id already released`                                  | `ロックはすでに解放済みです。`                  |
+| `ReentrantLockError`    | `AsyncmuxReentrantLockError`    | `Cannot acquire a lock while the same lock is already held` | `保持中のロックを再度獲得することはできません`  |
 
 各クラスは `ErrorOptions` を受け取るため、`cause` で元のエラーを保持できます。
 

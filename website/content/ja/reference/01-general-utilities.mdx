@@ -16,10 +16,10 @@ const mux = new Asyncmux();
 ### `constructor()` \{#asyncmux-constructor\}
 
 ```ts
-constructor();
+constructor(options?: AsyncmuxOptions);
 ```
 
-引数はありません。インスタンスごとに独立したロック状態を持ちます。
+インスタンスのオプションを指定して初期化します。インスタンスごとに独立したロック状態を持ちます。
 
 ### `lock()` \{#mux-lock\}
 
@@ -78,10 +78,24 @@ rLock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
 `lock` と `rLock` はすべて `AsyncmuxLock` で解決される `Promise` を返します。
 
 - 競合するロックが保持されている間は待機します。待機中の要求は到着順に処理されます。
-- `signal` が中断された場合、要求はキューから削除され、`signal.reason` で reject されます。
-- 再入は検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。
+- `signal` が中断された場合、要求はキューから削除され、`signal.reason` で拒否されます。
+- 既定では再入を検出しません。同じキーのロックを保持したまま再度取得すると、デッドロックします。`preventReentrancy` を有効にすると `ReentrantLockError` を投げます。
 
 競合の詳細は[キー付きロック](/guide/keyed-locks#conflicts)を参照してください。
+
+## `AsyncmuxOptions` \{#asyncmux-options\}
+
+`Asyncmux` クラスのコンストラクターに渡すオプションです。
+
+<TypeTable
+  type={{
+    preventReentrancy: {
+      type: "boolean",
+      description:
+        "再入を禁止するかどうかです。`true` の場合、同じ非同期コンテキストで保持中のロックと競合する要求に対して同期的に `ReentrantLockError` を投げます。`node:async_hooks` の `AsyncLocalStorage` を利用できない環境では無視されます。",
+    },
+  }}
+/>
 
 ## `AsyncmuxLockOptions` \{#asyncmux-lock-options\}
 
