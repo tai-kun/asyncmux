@@ -12,8 +12,6 @@ defaults:
 
 jobs:
   test:
-    env:
-      _RUSTFS_VERSION: "1.0.0-alpha.98"
     strategy:
       fail-fast: false
       matrix:
