@@ -58,7 +58,8 @@ function asyncmux(this_: object, signal?: AbortSignal): Promise<AsyncmuxLock>;
     },
     signal: {
       type: "AbortSignal",
-      description: "ロック待機を中断するためのシグナルです。中断された場合は `signal.reason` で拒否されます。",
+      description:
+        "ロック待機を中断するためのシグナルです。中断された場合は `signal.reason` で拒否されます。",
     },
   }}
 />
