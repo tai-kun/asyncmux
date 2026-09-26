@@ -1,0 +1,111 @@
+---
+title: Errors
+description: The error classes exported by asyncmux, and how to switch messages per language with setErrorMessage.
+---
+
+## `ErrorBase` \{#error-base\}
+
+The base class of asyncmux error classes. It extends `Error` and supports per-language messages.
+
+```ts
+import { ErrorBase } from "asyncmux";
+
+class MyError extends ErrorBase<undefined> {
+  public constructor(options?: ErrorOptions) {
+    super("My error message", options);
+  }
+}
+```
+
+<TypeTable
+  type={{
+    meta: {
+      type: "TMeta",
+      description:
+        "Arbitrary metadata attached to the error. It can be referenced when generating messages with a function.",
+    },
+    prefix: {
+      type: "string | undefined",
+      description: "A string prepended to the message (static property).",
+    },
+  }}
+/>
+
+Messages are resolved when the `message` property is read. The language is taken by `i18n-error-base` from the valibot global config (`getGlobalConfig().lang`), defaulting to `"en"`.
+
+```ts
+import { setGlobalConfig } from "valibot";
+import { LockReleasedError } from "asyncmux";
+
+setGlobalConfig({ lang: "ja" });
+
+new LockReleasedError().message; // "ロックはすでに解放済みです。"
+```
+
+## `setErrorMessage()` \{#set-error-message\}
+
+Registers a per-language message on an error class. You can add a new language to a built-in error or override an existing message.
+
+```ts
+function setErrorMessage(
+  reference: typeof ErrorBase,
+  message: string | ((meta: unknown) => string),
+  lang: string | Iterable<string>,
+): void;
+```
+
+`reference` specifies a class that extends `ErrorBase`.
+
+```ts
+import { setErrorMessage, ReentrantLockError } from "asyncmux";
+
+setErrorMessage(ReentrantLockError, "Cannot re-acquire the same lock", "ja");
+```
+
+Passing a function as the second argument lets you build the message from `meta`. Passing multiple language codes as the third argument registers them at once.
+
+## `DecoratorSupportError` \{#decorator-support-error\}
+
+Thrown when `@asyncmux` is used in an environment without Stage 3 decorator support.
+
+```ts
+class DecoratorSupportError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## `LockReleasedError` \{#lock-released-error\}
+
+Thrown when `release()` is called on an already-released lock.
+
+```ts
+class LockReleasedError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## `ReentrantLockError` \{#reentrant-lock-error\}
+
+Thrown when reentrancy that would deadlock is detected. See [Concurrency Model](/guide/concurrency#reentrancy) for the detection conditions.
+
+```ts
+class ReentrantLockError extends ErrorBase<undefined> {
+  constructor(options?: ErrorOptions);
+}
+```
+
+## Built-in messages \{#built-in-messages\}
+
+asyncmux registers English and Japanese messages for its built-in errors.
+
+| Class                 | `name`                          | English                                                     | Japanese                                    |
+| --------------------- | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| `DecoratorSupportError` | `AsyncmuxDecoratorSupportError` | `Requires Stage 3 decorator support`                        | `ステージ 3 のデコレーターのサポートが必要です` |
+| `LockReleasedError`     | `AsyncmuxLockReleasedError`     | `Lock id already released`                                  | `ロックはすでに解放済みです。`                  |
+| `ReentrantLockError`    | `AsyncmuxReentrantLockError`    | `Cannot acquire a lock while the same lock is already held` | `保持中のロックを再度獲得することはできません`  |
+
+Each class accepts `ErrorOptions`, so you can keep the original error in `cause`.
+
+```ts
+throw new ReentrantLockError({ cause: originalError });
+```

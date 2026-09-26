@@ -1,0 +1,84 @@
+---
+title: asyncmux
+description: A utility for mutual exclusion of async operations. With two APIs — decorators and lock objects — it prevents concurrent access to the same resource.
+---
+
+asyncmux is a utility for mutual exclusion of async operations. It offers two approaches: decorating class methods, and acquiring lock objects. Both follow the same model of write locks and read locks, so you can choose whichever fits your situation.
+
+## Features \{#features\}
+
+- **Automatic locking with decorators** — Methods decorated with `@asyncmux` run exclusively, while methods decorated with `@asyncmux.readonly` run concurrently with other readers. Locks are acquired and released automatically along with the method invocation.
+- **Manual locking with the function API** — `await asyncmux(this)` locks an arbitrary scope. Release it with the `using` syntax or `release()`.
+- **Keyed locks** — The `Asyncmux` class manages an independent lock per key. When no key is given, the lock becomes a global lock that conflicts with every lock.
+- **Abortable waits** — Passing an `AbortSignal` lets you abort a lock acquisition that is still waiting.
+- **Reentrancy detection** — Requesting a lock on the same target while already holding it throws `ReentrantLockError` to prevent deadlocks. In the `Asyncmux` class, enable it with the `preventReentrancy` option.
+
+## Quickstart \{#quickstart\}
+
+### Excluding a method with a decorator \{#quickstart-decorator\}
+
+```ts counter.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Counter {
+  #count = 0;
+
+  @asyncmux
+  async increment() {
+    const current = this.#count;
+    await sleep(10);
+    this.#count = current + 1;
+  }
+}
+```
+
+Even when `increment()` is called concurrently, the second call waits for the first one to finish before running.
+
+### Excluding resources with keyed locks \{#quickstart-keyed-lock\}
+
+```ts cache.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const cache = new Map<string, string>();
+
+async function read(key: string) {
+  // Exclusive with writes on the same key, concurrent with other reads.
+  using _ = await mux.rLock(key);
+  return cache.get(key);
+}
+
+async function write(key: string, value: string) {
+  // Exclusive with reads and writes on the same key.
+  using _ = await mux.lock(key);
+  cache.set(key, value);
+}
+```
+
+## Requirements \{#requirements\}
+
+- The decorator API requires a runtime or transpiler that supports Stage 3 decorators.
+- The `using` syntax can be used for automatic lock release, but it is optional. You can also release with `release()`.
+- Reentrancy detection accuracy varies by runtime. See [Concurrency Model](/guide/concurrency) for details.
+
+## Next steps \{#next-steps\}
+
+<CardGroup cols={2}>
+  <Card title="Installation" href="/guide/installation" icon="download">
+    Set up asyncmux and check its requirements.
+  </Card>
+  <Card title="Decorators" href="/guide/decorators" icon="at-sign">
+    Automatically run class methods exclusively.
+  </Card>
+  <Card title="Keyed locks" href="/guide/keyed-locks" icon="key">
+    Use per-key exclusion and global locks.
+  </Card>
+  <Card title="Benchmarks" href="/guide/benchmarks" icon="chart-column">
+    Check throughput per scenario.
+  </Card>
+  <Card title="Reference" href="/reference/general-utilities" icon="file-code">
+    Check the signatures and arguments of every API.
+  </Card>
+</CardGroup>

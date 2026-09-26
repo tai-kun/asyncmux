@@ -1,0 +1,88 @@
+---
+title: Manual locking
+description: How to lock an arbitrary scope with asyncmux(this) and asyncmux.readonly(this), and the release rules of AsyncmuxLock.
+---
+
+## Lock an arbitrary scope \{#overview\}
+
+When you want to lock only a specific scope or a conditional branch instead of a whole method, call `asyncmux` as a function. The object passed as the first argument is the lock target.
+
+```ts
+const lock = await asyncmux(this); // Write lock
+const readLock = await asyncmux.readonly(this); // Read lock
+```
+
+The return value is an `AsyncmuxLock`. Until the lock is released, conflicting lock requests on the same object wait.
+
+```ts runner.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Runner {
+  isOpen = true;
+
+  async run(ms: number) {
+    if (!this.isOpen) {
+      return; // Exit before acquiring the lock.
+    }
+
+    using _ = await asyncmux(this);
+
+    await sleep(ms);
+  }
+}
+```
+
+## Auto-release with `using` \{#using\}
+
+`AsyncmuxLock` implements `Symbol.dispose`, so the `using` syntax releases it automatically when the scope exits.
+
+```ts
+async function run() {
+  using _ = await asyncmux(this);
+  await sleep(10);
+  // Released automatically when leaving the scope.
+}
+```
+
+## Release explicitly with `release()` \{#release\}
+
+When `using` is unavailable, call `release()` in a `finally` block.
+
+```ts
+const lock = await asyncmux(this);
+
+try {
+  await task();
+} finally {
+  lock.release();
+}
+```
+
+## Release rules \{#release-rules\}
+
+- Calling `release()` twice throws `LockReleasedError`.
+- Calling `Symbol.dispose` (release via `using`) on an already-released lock is a no-op and does not throw.
+- Even when the release handling throws, the lock is treated as released. A second `release()` call throws `LockReleasedError`.
+- Use the `released` property to check whether the lock has been released.
+
+## Reentrancy notes \{#reentrancy\}
+
+Unlike decorators, the function API does not register a lock context. Therefore, re-acquiring a lock on the same object does not throw `ReentrantLockError` unless a decorated method is running — it deadlocks instead.
+
+```ts
+// Deadlock example:
+const lock1 = await asyncmux(target);
+const lock2 = await asyncmux(target); // Waits forever.
+```
+
+While a method decorated with `@asyncmux` or `@asyncmux.readonly` is running, its context is subject to reentrancy detection. See [Concurrency Model](/guide/concurrency#reentrancy) for details.
+
+## Abort with `AbortSignal` \{#abort\}
+
+Pass an `AbortSignal` as the second argument to abort a lock wait. See [Aborting](/guide/aborting) for details.
+
+```ts
+using _ = await asyncmux(this, signal);
+```

@@ -1,0 +1,104 @@
+---
+title: Class method utilities
+description: Signatures, arguments, and exceptions for the decorators and functions provided by the asyncmux default export.
+---
+
+`asyncmux` is the default export. It can be used both as a class method decorator and as a function.
+
+```ts
+import { asyncmux } from "asyncmux";
+```
+
+## Decorator `@asyncmux` \{#decorator-asyncmux\}
+
+Applies a write lock to the target async class method.
+
+```ts
+function asyncmux<TMethod extends (this: any, ...args: any) => Promise<any>>(
+  method: TMethod,
+  context: unknown,
+): TMethod;
+```
+
+<TypeTable
+  type={{
+    method: {
+      type: "(this: any, ...args: any) => Promise<any>",
+      required: true,
+      description: "The async class method to decorate. It must return a `Promise`.",
+    },
+    context: {
+      type: "unknown",
+      required: true,
+      description:
+        "The Stage 3 decorator context. Throws `DecoratorSupportError` when it has no `addInitializer`.",
+    },
+  }}
+/>
+
+The return value is the method with lock acquisition and release built in. Each call acquires the write lock of `this` and releases it when the method finishes.
+
+- Throws `ReentrantLockError` when reentrancy is detected.
+- Throws `DecoratorSupportError` without Stage 3 decorator support.
+
+## Function `asyncmux()` \{#functional-asyncmux\}
+
+Acquires the write lock of the given object.
+
+```ts
+function asyncmux(this_: object, signal?: AbortSignal): Promise<AsyncmuxLock>;
+```
+
+<TypeTable
+  type={{
+    this_: {
+      type: "object",
+      required: true,
+      description: "The object to lock.",
+    },
+    signal: {
+      type: "AbortSignal",
+      description:
+        "A signal to abort the lock wait. On abort, the call rejects with `signal.reason`.",
+    },
+  }}
+/>
+
+The return value is a `Promise` that resolves with the acquired `AsyncmuxLock`. For how to release it, see [AsyncmuxLock](/reference/general-utilities#asyncmux-lock).
+
+- Throws `ReentrantLockError` synchronously when reentrancy is detected. No detection occurs outside a lock context established by a decorator.
+- Functions cannot be lock targets. When the first argument is a function, it is treated as a decorator.
+
+## Decorator `@asyncmux.readonly` \{#decorator-asyncmux-readonly\}
+
+Applies a read lock to the target async class method. The signature and arguments are the same as `@asyncmux`.
+
+```ts
+function asyncmux.readonly<
+  TMethod extends (this: any, ...args: any) => Promise<any>,
+>(
+  method: TMethod,
+  context: unknown,
+): TMethod;
+```
+
+Read locks can run concurrently with each other. They wait while a write lock is held. The return value and exceptions are the same as `@asyncmux`.
+
+## Function `asyncmux.readonly()` \{#functional-asyncmux-readonly\}
+
+Acquires the read lock of the given object.
+
+```ts
+function asyncmux.readonly(
+  this_: object,
+  signal?: AbortSignal,
+): Promise<AsyncmuxLock>;
+```
+
+The arguments and return value are the same as `asyncmux()`; only the lock kind differs.
+
+## See also \{#see-also\}
+
+- [Decorators](/guide/decorators)
+- [Manual locking](/guide/manual-locking)
+- [Concurrency model](/guide/concurrency)

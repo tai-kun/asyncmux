@@ -1,0 +1,93 @@
+---
+title: Decorators
+description: "How to apply @asyncmux and @asyncmux.readonly to class methods for per-instance mutual exclusion."
+---
+
+## Protect class methods \{#overview\}
+
+`@asyncmux` and `@asyncmux.readonly` are applied to class methods that return a `Promise`. The lock target is the instance the method runs on (`this`). The lock is released automatically when the method finishes, so it can never leak.
+
+## `@asyncmux` — Write lock \{#write-lock\}
+
+Methods decorated with `@asyncmux` run serially on the same instance. While one call is in progress, other calls wait.
+
+```ts counter.ts
+import { asyncmux } from "asyncmux";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class Counter {
+  #count = 0;
+
+  @asyncmux
+  async increment() {
+    const current = this.#count;
+    await sleep(10);
+    this.#count = current + 1;
+  }
+}
+```
+
+Even when `increment()` is called concurrently, updates to `#count` are never lost.
+
+```ts
+const counter = new Counter();
+
+// The two calls run serially.
+await Promise.all([counter.increment(), counter.increment()]);
+```
+
+## `@asyncmux.readonly` — Read lock \{#read-lock\}
+
+Methods decorated with `@asyncmux.readonly` can run concurrently with each other. While a method decorated with `@asyncmux` is running, they wait for it to finish.
+
+```ts data-store.ts
+import { asyncmux } from "asyncmux";
+
+class DataStore {
+  #data = new Map<string, string>();
+
+  @asyncmux
+  async update(key: string, value: string) {
+    // Writes are exclusive.
+    this.#data.set(key, value);
+  }
+
+  @asyncmux.readonly
+  async read(key: string) {
+    // Reads run concurrently with each other, exclusively with writes.
+    return this.#data.get(key);
+  }
+}
+```
+
+## Lock scope \{#lock-scope\}
+
+- Locks are independent per instance. Methods on different instances never affect each other.
+- The lock is released even when the method throws.
+- The lock is held only while the method is running. It never remains after the method returns.
+
+## Reentrancy \{#reentrancy\}
+
+Calling a method on the same instance while holding its lock throws `ReentrantLockError` to prevent deadlocks. Only reentrancy between read locks is allowed, as a shared lock.
+
+```ts
+class Service {
+  @asyncmux
+  async outer() {
+    // Calling a method on the same instance while holding the write lock fails.
+    await this.inner();
+  }
+
+  @asyncmux
+  async inner() {}
+}
+```
+
+See [Concurrency Model](/guide/concurrency#reentrancy) for the detailed detection rules.
+
+## Caveats \{#caveats\}
+
+- You cannot pass an `AbortSignal` to decorators. To abort a wait, use the [function API](/guide/manual-locking).
+- In environments without Stage 3 decorator support, `DecoratorSupportError` is thrown.
+- Decorators can only be applied to class methods. They cannot be used on plain functions or arrow function properties.

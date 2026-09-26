@@ -1,0 +1,113 @@
+---
+title: Keyed locks
+description: How to use the Asyncmux class to manage per-key independent locks and a global lock that blocks everything.
+---
+
+## The `Asyncmux` class \{#overview\}
+
+The `Asyncmux` class manages multiple locks identified by keys in a single instance. Operations on the same key are exclusive, while operations on different keys never affect each other.
+
+```ts example.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+
+async function update(key: string) {
+  using _ = await mux.lock(key);
+  // Perform an exclusive write per key.
+}
+
+// Different keys can run concurrently.
+await Promise.all([update("a"), update("b")]);
+```
+
+`Asyncmux` instances are independent of each other. Create a separate instance per use case.
+
+## Write locks and read locks \{#lock-types\}
+
+- `lock(...)` — Write lock (exclusive lock). Conflicts with locks on the same key and with global locks.
+- `rLock(...)` — Read lock (shared lock). Can coexist with other reads.
+
+```ts cache.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const cache = new Map<string, string>();
+
+async function read(key: string) {
+  using _ = await mux.rLock(key);
+  return cache.get(key);
+}
+
+async function write(key: string, value: string) {
+  using _ = await mux.lock(key);
+  cache.set(key, value);
+}
+```
+
+## Key forms \{#key-forms\}
+
+Each method can be called in three ways.
+
+```ts
+await mux.lock(); // No key (global lock)
+await mux.lock("user:42"); // With a key
+await mux.lock({ key: "user:42", signal }); // With options
+```
+
+`rLock` supports the same three forms. Omitting the `key` option results in a keyless global lock.
+
+## Global locks \{#global-locks\}
+
+Without a key, the lock conflicts with every lock in the instance.
+
+- `mux.lock()` (global write lock) blocks every other lock.
+- `mux.rLock()` (global read lock) blocks every write lock, but read locks can coexist with each other.
+
+A global write lock suits rebuilds or maintenance that span all keys.
+
+```ts rebuild.ts
+async function rebuildAll() {
+  using _ = await mux.lock(); // Makes every keyed lock wait.
+  // Rebuild everything, for example.
+}
+```
+
+## Conflict rules \{#conflicts\}
+
+Whether a requested lock conflicts with the locks currently held is as follows.
+
+| Requested lock            | Conflicting held locks            | Coexisting held locks                     |
+| ------------------------- | --------------------------------- | ----------------------------------------- |
+| `lock()` (global W)       | All                               | None                                      |
+| `lock("K")` (keyed W)     | Global W/R, key K W/R             | Keyed W/R other than key K                |
+| `rLock()` (global R)      | Global W, all keyed W             | Global R, all keyed R                     |
+| `rLock("K")` (keyed R)    | Global W, key K W                 | Global R, W other than key K, all R       |
+
+Conflicting requests are processed in arrival (FIFO) order. Non-conflicting requests skip the back of the queue and are acquired immediately.
+
+## Reentrancy notes \{#reentrancy\}
+
+The `Asyncmux` class does not detect reentrancy by default. Holding a lock on a key and acquiring it again deadlocks.
+
+```ts deadlock.ts
+async function deadlock() {
+  using _ = await mux.lock("key");
+  await mux.lock("key"); // Deadlocks.
+}
+```
+
+You can enable reentrancy detection with the `preventReentrancy` option.
+
+```ts reentrancy.ts
+const mux = new Asyncmux({ preventReentrancy: true });
+
+async function update() {
+  using _ = await mux.lock("key");
+  await mux.lock("key"); // ReentrantLockError
+}
+```
+
+Detection is performed per async context. Requests from concurrent tasks started within the same synchronous execution are not treated as reentrant and simply wait as usual. Detection is also disabled in environments without `AsyncLocalStorage` from `node:async_hooks`.
+
+When you need to lock the same key more than once, reconsider the lock scope.

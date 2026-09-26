@@ -1,0 +1,156 @@
+---
+title: General utilities
+description: The Asyncmux class and AsyncmuxLock APIs. Signatures of lock and rLock, lock options, and release rules.
+---
+
+## `Asyncmux` class \{#asyncmux-class\}
+
+Manages per-key independent locks and global locks that conflict with every lock.
+
+```ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+```
+
+### `constructor()` \{#asyncmux-constructor\}
+
+```ts
+constructor(options?: AsyncmuxOptions);
+```
+
+Initializes the instance with the given options. Each instance holds independent lock state.
+
+### `lock()` \{#mux-lock\}
+
+```ts
+lock(): Promise<AsyncmuxLock>;
+```
+
+Acquires a keyless write lock (global write lock). It conflicts with every lock in the instance.
+
+### `lock(key)` \{#mux-lock-key\}
+
+```ts
+lock(key: string): Promise<AsyncmuxLock>;
+```
+
+Acquires the write lock for the given key. It conflicts with locks on the same key and coexists with locks on different keys.
+
+### `lock(options)` \{#mux-lock-options\}
+
+```ts
+lock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
+```
+
+Acquires a write lock with a key and an `AbortSignal` specified via options. Omitting `key` results in a global write lock.
+
+```ts
+using _ = await mux.lock({ key: "user:42", signal: controller.signal });
+```
+
+### `rLock()` \{#mux-rlock\}
+
+```ts
+rLock(): Promise<AsyncmuxLock>;
+```
+
+Acquires a keyless read lock (global read lock). It conflicts with every write lock and coexists with read locks.
+
+### `rLock(key)` \{#mux-rlock-key\}
+
+```ts
+rLock(key: string): Promise<AsyncmuxLock>;
+```
+
+Acquires the read lock for the given key. It conflicts with write locks on the same key, while read locks coexist with each other.
+
+### `rLock(options)` \{#mux-rlock-options\}
+
+```ts
+rLock(options: AsyncmuxLockOptions): Promise<AsyncmuxLock>;
+```
+
+Acquires a read lock with a key and an `AbortSignal` specified via options. Omitting `key` results in a global read lock.
+
+### Common behavior \{#asyncmux-common\}
+
+`lock` and `rLock` always return a `Promise` that resolves with an `AsyncmuxLock`.
+
+- While a conflicting lock is held, the request waits. Waiting requests are processed in arrival order.
+- When `signal` is aborted, the request is removed from the queue and rejects with `signal.reason`.
+- By default, reentrancy is not detected. Holding a lock on a key and acquiring it again deadlocks. Enabling `preventReentrancy` throws `ReentrantLockError` instead.
+
+See [Keyed locks](/guide/keyed-locks#conflicts) for conflict details.
+
+## `AsyncmuxOptions` \{#asyncmux-options\}
+
+Options passed to the `Asyncmux` class constructor.
+
+<TypeTable
+  type={{
+    preventReentrancy: {
+      type: "boolean",
+      description:
+        "Whether to forbid reentrancy. When `true`, requests that conflict with a lock held in the same async context synchronously throw `ReentrantLockError`. Ignored in environments without `AsyncLocalStorage` from `node:async_hooks`.",
+    },
+  }}
+/>
+
+## `AsyncmuxLockOptions` \{#asyncmux-lock-options\}
+
+Options for `lock` and `rLock`.
+
+<TypeTable
+  type={{
+    key: {
+      type: "string",
+      description: "The key to lock. Omitting it results in a global lock.",
+    },
+    signal: {
+      type: "AbortSignal",
+      description: "A signal to abort the lock wait.",
+    },
+  }}
+/>
+
+## `AsyncmuxLock` class \{#asyncmux-lock\}
+
+Represents an acquired lock. Instances are only obtained as return values of each API; the constructor is internal.
+
+### `released` \{#asyncmux-lock-released\}
+
+Returns whether the lock has been released.
+
+```ts
+get released(): boolean;
+```
+
+### `release()` \{#asyncmux-lock-release\}
+
+Releases the lock. Calling it twice on the same lock throws `LockReleasedError`. Even when the release handling throws, the lock is treated as released.
+
+```ts
+release(): void;
+```
+
+### `[Symbol.dispose]()` \{#asyncmux-lock-dispose\}
+
+Implements automatic release via the `using` syntax. Does nothing when already released.
+
+```ts
+[Symbol.dispose](): void;
+```
+
+```ts
+{
+  using _ = await mux.lock("key");
+  // release() is called when leaving the scope.
+}
+```
+
+## See also \{#see-also\}
+
+- [Keyed locks](/guide/keyed-locks)
+- [Manual locking](/guide/manual-locking)
+- [Aborting](/guide/aborting)

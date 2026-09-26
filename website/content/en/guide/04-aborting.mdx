@@ -1,0 +1,65 @@
+---
+title: Aborting
+description: How to pass an AbortSignal to a lock request to abort a pending acquisition, and when aborts take effect.
+---
+
+## Overview \{#overview\}
+
+The function API and the `Asyncmux` class accept an `AbortSignal` to abort a lock wait. The decorator API does not.
+
+```ts
+// Function API
+using _ = await asyncmux(this, signal);
+```
+
+```ts
+// Asyncmux class
+using _ = await mux.lock({ key: "key", signal });
+```
+
+## When aborts take effect \{#timing\}
+
+- When the signal is already aborted at call time, the lock is never requested and the call rejects immediately with `signal.reason`.
+- When aborted while waiting, the request is removed from the queue and rejects with `signal.reason`. Subsequent requests continue to be processed.
+- Aborting after the lock has been acquired does not release it. Release it with `release()` or `using`.
+
+```ts timeout.ts
+import { Asyncmux } from "asyncmux";
+
+const mux = new Asyncmux();
+const controller = new AbortController();
+
+const lockPromise = mux.lock({
+  key: "resource",
+  signal: controller.signal,
+});
+
+setTimeout(() => {
+  controller.abort(new Error("Timed out"));
+}, 1000);
+
+const lock = await lockPromise.catch((error) => {
+  // On abort, signal.reason is passed through as-is.
+  console.error(error);
+  return null;
+});
+
+if (lock) {
+  try {
+    // Run with the lock acquired.
+  } finally {
+    lock.release();
+  }
+}
+```
+
+## Abort reason \{#reason\}
+
+The value passed to `AbortController.abort()` becomes `signal.reason`. When omitted, the runtime's `AbortError` (`DOMException`) is used as the reason.
+
+```ts
+const controller = new AbortController();
+controller.abort("Abort reason");
+
+await asyncmux(target, controller.signal); // Rejects with "Abort reason".
+```

@@ -1,0 +1,65 @@
+---
+title: Installation
+description: How to install asyncmux, and the requirements for decorators, the using syntax, and reentrancy detection.
+---
+
+## Install the package \{#install-package\}
+
+```package-install
+npm i asyncmux
+```
+
+## Requirements \{#requirements\}
+
+asyncmux is an ESM-only package.
+
+- **Decorator API** — Stage 3 (standard) decorators are required. With TypeScript, compile without enabling `experimentalDecorators`. Using `@asyncmux` in an environment without Stage 3 support throws `DecoratorSupportError`.
+- **`using` syntax** — Can be used for automatic lock release. It is optional, so you can release with `release()` in environments without `using` support.
+- **`node:async_hooks`** — Used for reentrancy detection. In environments where `process.getBuiltinModule("node:async_hooks")` is available (Node.js 22.3+, Bun, and others), reentrancy across `await` is also detected. In environments without it, detection falls back to covering only the synchronous call scope.
+
+## Importing \{#importing\}
+
+```ts
+import { asyncmux, Asyncmux, LockReleasedError, ReentrantLockError } from "asyncmux";
+import type { AsyncmuxLock, AsyncmuxLockOptions } from "asyncmux";
+```
+
+`AsyncmuxLock` is exposed as a type only. Use the locks returned by each API.
+
+## Peer dependencies \{#peer-dependencies\}
+
+asyncmux references the following packages as peer dependencies. npm 7+ and pnpm install them automatically, but add them explicitly if needed.
+
+- `@logtape/logtape` — Used for debug logging.
+- `valibot` — Used for error message localization (a peer dependency of `i18n-error-base`).
+
+## TypeScript configuration \{#typescript\}
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext", "DOM"],
+    "experimentalDecorators": false
+  }
+}
+```
+
+To use the `Symbol.dispose` type, specify a `lib` that includes it (such as `ESNext`).
+
+## Enable debug logging \{#debug-logging\}
+
+asyncmux writes debug logs to the `@logtape/logtape` category `asyncmux`. Setting up LogTape lets you inspect lock acquisition, release, and queue state.
+
+```ts
+import { configure, getConsoleSink } from "@logtape/logtape";
+
+await configure({
+  sinks: {
+    console: getConsoleSink(),
+  },
+  loggers: [{ category: "asyncmux", sinks: ["console"], lowestLevel: "debug" }],
+});
+```
