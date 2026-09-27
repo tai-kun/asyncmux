@@ -36,7 +36,7 @@
     "@rolldown/plugin-babel": "0.2.4",
     "@tsconfig/node24": "24.0.5",
     "@tsconfig/strictest": "2.0.8",
-    "@types/node": "24.13.5",
+    "@types/node": "24.13.6",
     "@vitest/browser": "4.1.11",
     "@vitest/browser-playwright": "4.1.11",
     "playwright": "1.63.0",
