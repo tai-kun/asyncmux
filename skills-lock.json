@@ -1,11 +1,11 @@
 {
   "version": 1,
   "skills": {
-    "blume": {
-      "source": "haydenbleasel/blume",
+    "blume-docs": {
+      "source": "tai-kun/agent-skills",
       "sourceType": "github",
-      "skillPath": "skills/blume/SKILL.md",
-      "computedHash": "c93fdbe48795941a2636c54e6768c4ba4234211ee3f9c0e7c6e67ecd3ee1611f"
+      "skillPath": "skills/blume-docs/SKILL.md",
+      "computedHash": "5761688b0c6e107b577d067f458f855252c66d109716263cba7456369ff79bcf"
     },
     "defensive-git": {
       "source": "tai-kun/agent-skills",
