@@ -211,7 +211,7 @@ jobs:
             echo "$name のバージョンを $version に更新します。"
             (
               cd "$dir"
-              npm version "$version" --no-git-tag-version --allow-same-version
+              pnpm version "$version" --no-git-tag-version --allow-same-version --no-git-checks
             )
           done <<< "$LIST"
 
