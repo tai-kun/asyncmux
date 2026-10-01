@@ -1,6 +1,6 @@
 {
   "name": "asyncmux",
-  "version": "0.0.0",
+  "version": "0.0.12",
   "description": "A utility for mutual exclusion using asynchronous processing",
   "homepage": "https://tai-kun.github.io/asyncmux",
   "license": "MIT",
