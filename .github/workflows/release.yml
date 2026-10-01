@@ -219,39 +219,34 @@ jobs:
         if: steps.packages.outputs.count != '0'
         env:
           LIST: ${{ steps.packages.outputs.list }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_COUNT: ${{ steps.packages.outputs.count }}
         run: |
           entry_file="$RUNNER_TEMP/release-changelog.md"
-          : > "$entry_file"
+
+          release_tag=""
+          release_version=""
 
           while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
 
-            tag="$name@$version"
-            previous_tag=$(git tag --list "$name@*" --sort=-v:refname | head -n 1 || true)
-
-            args=(
-              --method POST
-              "repos/$GITHUB_REPOSITORY/releases/generate-notes"
-              -f "tag_name=$tag"
-              -f "target_commitish=$GITHUB_SHA"
-              --jq '.body // ""'
-            )
-
-            if [ -n "$previous_tag" ]; then
-              args+=(-f "previous_tag_name=$previous_tag")
+            if [ -z "$release_tag" ]; then
+              release_tag="$name@$version"
+              release_version="$version"
             fi
-
-            body=$(gh api "${args[@]}")
-
-            if [ -s "$entry_file" ]; then
-              printf '\n' >> "$entry_file"
-            fi
-
-            printf '## %s\n\n%s\n' "$tag" "$body" >> "$entry_file"
           done <<< "$LIST"
+
+          if [ "$RELEASE_COUNT" -gt 1 ]; then
+            heading="v$release_version"
+          else
+            heading="$release_tag"
+          fi
+
+          previous_tag=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)
+          body=$(node .github/scripts/generate-changelog.mjs "$GITHUB_REPOSITORY" "$release_tag" "$previous_tag")
+
+          printf '## %s\n\n%s\n' "$heading" "$body" > "$entry_file"
 
           {
             echo "changelog<<EOF"
