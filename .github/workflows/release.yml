@@ -29,10 +29,10 @@ jobs:
       packages: ${{ steps.packages.outputs.list }}
     steps:
       - name: "バージョン解析"
+        id: pkg
         uses: tai-kun/gha-package-version-parser@dd1d3b95150181171e03b6bc31dc090bd67e07e0 # v1.0.0
         with:
           package: ${{ github.event.inputs.version }}
-        id: pkg
 
       - name: "チェックアウト"
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -59,7 +59,7 @@ jobs:
 
             echo "::group::$dir"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
               npm run build
             )
             echo "::endgroup::"
@@ -74,7 +74,7 @@ jobs:
 
             echo "::group::$dir"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
 
               if ! mise tasks --json | jq -e '.[] | select(.name == "test:format")' >/dev/null; then
                 echo "::notice::$dir には test:format タスクがないためスキップします。"
@@ -95,7 +95,7 @@ jobs:
 
             echo "::group::$dir"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
 
               if ! mise tasks --json | jq -e '.[] | select(.name == "test:lint")' >/dev/null; then
                 echo "::notice::$dir には test:lint タスクがないためスキップします。"
@@ -116,7 +116,7 @@ jobs:
 
             echo "::group::$dir"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
 
               if grep -q "playwright" package.json; then
                 npx playwright install --with-deps
@@ -181,22 +181,21 @@ jobs:
           fi
 
           list="${list%$'\n'}"
-          count=$(grep -c . <<< "$list" || true)
 
-          {
-            if [ -n "$list" ]; then
-              echo "list<<EOF"
-              echo "$list"
-              echo "EOF"
-            fi
-            echo "count=$count"
-            echo "non_private=$non_private_count"
-          } >> "$GITHUB_OUTPUT"
-
-          if [ "$count" = "0" ]; then
+          if [ -z "$list" ]; then
             echo "::error::公開対象のパッケージがありません。"
             exit 1
           fi
+
+          count=$(grep -c . <<< "$list")
+
+          {
+            echo "list<<EOF"
+            echo "$list"
+            echo "EOF"
+            echo "count=$count"
+            echo "non_private=$non_private_count"
+          } >> "$GITHUB_OUTPUT"
 
       - name: "バージョンを更新"
         if: steps.packages.outputs.count != '0'
@@ -210,7 +209,7 @@ jobs:
 
             echo "$name のバージョンを $version に更新します。"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
               pnpm version "$version" --no-git-tag-version --allow-same-version --no-git-checks
             )
           done <<< "$LIST"
@@ -225,7 +224,7 @@ jobs:
           entry_file="$RUNNER_TEMP/release-changelog.md"
           : > "$entry_file"
 
-          while IFS=$'\t' read -r dir name version; do
+          while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
@@ -240,6 +239,7 @@ jobs:
               -f "target_commitish=$GITHUB_SHA"
               --jq '.body // ""'
             )
+
             if [ -n "$previous_tag" ]; then
               args+=(-f "previous_tag_name=$previous_tag")
             fi
@@ -249,6 +249,7 @@ jobs:
             if [ -s "$entry_file" ]; then
               printf '\n' >> "$entry_file"
             fi
+
             printf '## %s\n\n%s\n' "$tag" "$body" >> "$entry_file"
           done <<< "$LIST"
 
@@ -280,29 +281,30 @@ jobs:
         if: steps.packages.outputs.count != '0'
         env:
           LIST: ${{ steps.packages.outputs.list }}
-          VERSION: ${{ steps.pkg.outputs.version }}
           RELEASE_COUNT: ${{ steps.packages.outputs.count }}
           NON_PRIVATE_COUNT: ${{ steps.packages.outputs.non_private }}
         run: |
           release_tag=""
+          release_version=""
           release_names=""
 
-          while IFS=$'\t' read -r dir name version; do
+          while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
 
             if [ -z "$release_tag" ]; then
               release_tag="$name@$version"
+              release_version="$version"
             fi
 
             release_names+="- $name"$'\n'
           done <<< "$LIST"
 
           if [ "$RELEASE_COUNT" -ge 2 ]; then
-            message="release: v$VERSION (x$RELEASE_COUNT)"$'\n'"${release_names%$'\n'}"
+            message="release: v$release_version (x$RELEASE_COUNT)"$'\n'"${release_names%$'\n'}"
           elif [ "$NON_PRIVATE_COUNT" -eq 1 ]; then
-            message="release: v$VERSION"
+            message="release: v$release_version"
           else
             message="release: $release_tag"
           fi
@@ -318,7 +320,7 @@ jobs:
         env:
           LIST: ${{ steps.packages.outputs.list }}
         run: |
-          while IFS=$'\t' read -r dir name version; do
+          while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
@@ -332,25 +334,27 @@ jobs:
         if: steps.packages.outputs.count != '0'
         env:
           LIST: ${{ steps.packages.outputs.list }}
-          VERSION: ${{ steps.pkg.outputs.version }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           first_tag=""
+          release_version=""
           package_count=0
 
-          while IFS=$'\t' read -r dir name version; do
+          while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
 
             package_count=$((package_count + 1))
+
             if [ -z "$first_tag" ]; then
               first_tag="$name@$version"
+              release_version="$version"
             fi
           done <<< "$LIST"
 
           if [ "$package_count" -gt 1 ]; then
-            title="$VERSION"
+            title="$release_version"
           else
             title="$first_tag"
           fi
@@ -369,7 +373,7 @@ jobs:
 
             echo "$name@$version を公開します。"
             (
-              cd "$dir"
+              cd "$dir" || exit 1
               pnpm publish --access public --no-git-checks --provenance
             )
           done <<< "$LIST"
@@ -380,7 +384,7 @@ jobs:
           LIST: ${{ steps.packages.outputs.list }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          while IFS=$'\t' read -r dir name version; do
+          while IFS=$'\t' read -r _ name version; do
             if [ -z "$name" ]; then
               continue
             fi
